@@ -1,5 +1,6 @@
-package cluelessuk
+package cluelessuk.bytecode
 
+import cluelessuk.byteEncoder
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -52,14 +53,16 @@ class ByteEncoder {
     fun readOperands(instruction: Instruction): Pair<UShortArray, BytesRead> {
         val errorValue = { ushortArrayOf() to 0 }
         val definition = lookup(instruction) ?: return errorValue()
+        val buffer = allocate(definition.operandWidthBytes.sum())
 
-        val totalBytes = definition.operandWidthBytes.sum()
-        val buffer = ByteBuffer
-            .allocate(totalBytes)
-            .order(ByteOrder.BIG_ENDIAN)
-            .putOperands(instruction)
+        var offset = 1 // start at one to ignore the opcode
+        definition.operandWidthBytes.forEach { width ->
+            val operand = instruction.sliceArray(offset until offset + width)
+            buffer.put(operand)
+            offset += width
+        }
 
-        return buffer.toUShortArray() to totalBytes
+        return buffer.toUShortArray() to offset - 1
     }
 
     companion object {
@@ -74,6 +77,49 @@ class ByteEncoder {
             }
             return lookup(OpCode.from(instruction.first()))
         }
+
+        private fun allocate(sizeInBytes: Int): ByteBuffer {
+            return ByteBuffer
+                .allocate(sizeInBytes)
+                .order(ByteOrder.BIG_ENDIAN)
+        }
     }
 }
 
+class Instructions(val value: ByteArray) {
+    override fun toString(): String {
+        var offset = 0
+        var output = ""
+        var currentInstruction = value
+
+        while (offset < value.size) {
+            val (instructionString, bytesRead) = asString(currentInstruction)
+
+            output += "${offset.asAddress()} $instructionString\n"
+            offset += bytesRead
+            currentInstruction = value.sliceArray(offset until value.size)
+        }
+
+        return output
+    }
+}
+
+val errorResponse = "" to 0
+fun asString(instruction: Instruction): Pair<String, BytesRead> {
+    if (instruction.isEmpty()) {
+        return errorResponse
+    }
+
+    val opcode = OpCode.from(instruction[0])
+    if (ByteEncoder.lookup(opcode) == null) {
+        return errorResponse
+    }
+
+    val (operands, operandBytes) = byteEncoder.readOperands(instruction)
+    val output = "$opcode ${operands.joinToString(separator = ",")}"
+    val bytesRead = OpCode.width() + operandBytes
+
+    return output to bytesRead
+}
+
+fun Int.asAddress() = "%0${4}d".format(this)

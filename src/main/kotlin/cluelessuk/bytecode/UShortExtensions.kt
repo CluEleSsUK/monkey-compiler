@@ -1,4 +1,4 @@
-package cluelessuk
+package cluelessuk.bytecode
 
 import java.nio.ByteBuffer
 
@@ -24,11 +24,4 @@ fun ByteBuffer.toUShortArray(): UShortArray {
         index += 2
     }
     return array
-}
-
-fun ByteBuffer.putOperands(instruction: Instruction): ByteBuffer {
-    instruction.drop(1).forEach {
-        this.put(it)
-    }
-    return this
 }

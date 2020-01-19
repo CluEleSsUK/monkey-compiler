@@ -1,5 +1,7 @@
 package cluelessuk
 
+import cluelessuk.bytecode.ByteEncoder
+import cluelessuk.bytecode.OpCode
 import kotlin.UShortArray
 import spock.lang.Specification
 
