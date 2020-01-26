@@ -17,15 +17,29 @@ class CompilerTest {
         // given
         val input = "1 + 2"
         val program = Parser(Lexer(input)).parseProgram()
+        val expectedOutput = arrayOf(MInteger(1), MInteger(2))
 
         // when
         val result = compiler.compile(program)
 
         // then
         assertTrue { result is Success }
-        assertTrue { compiler.bytecode().constants.contentEquals(arrayOf(1, 2)) }
-        assertTrue {
-            compiler.bytecode().instructions.contentEquals(arrayOf(encoder.make(OpCode.CONSTANT, 1.toUShort()), encoder.make(OpCode.CONSTANT, 2.toUShort())))
-        }
+        assertTrue { compiler.bytecode().constants.contentEquals(expectedOutput) }
+    }
+
+    @Test
+    fun `Integer arithmetic adds integer constants to the constant pool`() {
+        // given
+        val input = "1 + 2"
+        val program = Parser(Lexer(input)).parseProgram()
+        val makeConstant = { memoryAddress: Int -> encoder.make(OpCode.CONSTANT, memoryAddress.toUShort()) }
+        val expectedConstantsWithAddress = arrayOf(makeConstant(0), makeConstant(1))
+
+        // when
+        val result = compiler.compile(program)
+
+        // then
+        assertTrue { result is Success }
+        assertTrue { compiler.bytecode().instructions.contentDeepEquals(expectedConstantsWithAddress) }
     }
 }

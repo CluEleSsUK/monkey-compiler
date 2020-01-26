@@ -1,6 +1,5 @@
 package cluelessuk.bytecode
 
-import cluelessuk.byteEncoder
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -115,7 +114,7 @@ fun asString(instruction: Instruction): Pair<String, BytesRead> {
         return errorResponse
     }
 
-    val (operands, operandBytes) = byteEncoder.readOperands(instruction)
+    val (operands, operandBytes) = ByteEncoder().readOperands(instruction)
     val output = "$opcode ${operands.joinToString(separator = ",")}"
     val bytesRead = OpCode.width() + operandBytes
 

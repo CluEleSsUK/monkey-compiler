@@ -17,7 +17,10 @@ class ByteEncoderKtTest extends Specification {
 
         where:
         opcode          | operands             | expected
-        OpCode.CONSTANT | ushortArrayOf(65534) | [OpCode.CONSTANT.byte(), 255, 254] as byte[] // 32 bit number uses up 2 * 16bit words
+        OpCode.CONSTANT | ushortArrayOf(0)     | [OpCode.CONSTANT.byte(), 0, 0] as byte[]
+        OpCode.CONSTANT | ushortArrayOf(1)     | [OpCode.CONSTANT.byte(), 0, 1] as byte[]
+        OpCode.CONSTANT | ushortArrayOf(65534) | [OpCode.CONSTANT.byte(), 255, 254] as byte[]
+        OpCode.CONSTANT | ushortArrayOf(65535) | [OpCode.CONSTANT.byte(), 255, 255] as byte[]
     }
 
     def "Reading operands returns the correct operands"(OpCode opcode, UShortArray operands, int bytesRead) {
