@@ -17,7 +17,7 @@ class CompilerTest {
         // given
         val input = "1 + 2"
         val program = Parser(Lexer(input)).parseProgram()
-        val expectedOutput = arrayOf(MInteger(1), MInteger(2))
+        val expectedOutput = arrayOf(MInteger.from(1), MInteger.from(2))
 
         // when
         val result = compiler.compile(program)

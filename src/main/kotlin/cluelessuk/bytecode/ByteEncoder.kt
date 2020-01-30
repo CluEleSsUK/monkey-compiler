@@ -85,7 +85,7 @@ class ByteEncoder {
     }
 }
 
-class Instructions(val value: ByteArray) {
+class Instructions(private val value: ByteArray) {
     override fun toString(): String {
         var offset = 0
         var output = ""

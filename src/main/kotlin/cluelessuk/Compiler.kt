@@ -15,16 +15,16 @@ data class Error(val reasons: List<String>) : Result<Unit>()
 
 val Successful = Success(Unit)
 
-class Bytecode(val instructions: Array<ByteArray>, val constants: Array<Any>)
+class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
 
 class Compiler {
 
     private val byteEncoder = ByteEncoder()
-    private val instructions = mutableListOf<ByteArray>()
-    private val constants = mutableListOf<Any>()
+    private val output = CompiledInstructions()
+    private val constants = ConstantPool()
 
     fun bytecode(): Bytecode {
-        return Bytecode(instructions.toTypedArray(), constants.toTypedArray())
+        return Bytecode(output.get(), constants.get())
     }
 
     fun compile(node: Node): Result<*> {
@@ -58,26 +58,36 @@ class Compiler {
     }
 
     private fun compileIntegerLiteral(node: IntegerLiteral): Result<*> {
-        emit(OpCode.CONSTANT, addConstant(MInteger(node.value)))
+        val pointerToConstant = constants.addConstantForIndex(MInteger(node.value.toUShort()))
+        emit(OpCode.CONSTANT, pointerToConstant)
         return Successful
-    }
-
-    // returns last index of constant pool as an ID for the item added
-    private fun addConstant(obj: MObject): UShort {
-        constants += obj
-        return (constants.size - 1).toUShort()
     }
 
     private fun emit(opcode: OpCode, vararg operands: UShort): UShort {
         val instruction = byteEncoder.make(opcode, operands.toList())
-        return addInstructionForPosition(instruction)
-    }
-
-    // returns starting position of this instruction
-    private fun addInstructionForPosition(instruction: ByteArray): UShort {
-        val positionForNext = instructions.size
-        instructions += instruction
-        return positionForNext.toUShort()
+        return output.addInstructionForIndex(instruction)
     }
 }
 
+class ConstantPool {
+    private val objects = mutableListOf<MObject>()
+
+    // returns last index of constant pool as an ID for the item added
+    fun addConstantForIndex(obj: MObject): UShort {
+        objects += obj
+        return objects.lastIndex.toUShort()
+    }
+
+    fun get(): Array<MObject> = objects.toTypedArray()
+}
+
+class CompiledInstructions {
+    private val instructions = mutableListOf<ByteArray>()
+
+    fun addInstructionForIndex(instruction: ByteArray): UShort {
+        instructions += instruction
+        return instructions.lastIndex.toUShort()
+    }
+
+    fun get(): Array<ByteArray> = instructions.toTypedArray()
+}
