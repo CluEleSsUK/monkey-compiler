@@ -1,9 +1,12 @@
 package cluelessuk
 
 import cluelessuk.bytecode.ByteEncoder
+import cluelessuk.bytecode.Compiler
 import cluelessuk.bytecode.OpCode
+import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
+import cluelessuk.vm.MInteger
 import org.junit.Test
 import kotlin.test.assertTrue
 

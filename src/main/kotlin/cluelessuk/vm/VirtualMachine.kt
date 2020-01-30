@@ -1,5 +1,6 @@
-package cluelessuk
+package cluelessuk.vm
 
+import cluelessuk.bytecode.Bytecode
 import cluelessuk.bytecode.OpCode
 import java.util.ArrayDeque
 import java.util.Deque

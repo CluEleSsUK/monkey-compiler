@@ -1,7 +1,12 @@
 package cluelessuk
 
+import cluelessuk.bytecode.Compiler
+import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
+import cluelessuk.vm.MInteger
+import cluelessuk.vm.MObject
+import cluelessuk.vm.VirtualMachine
 import spock.lang.Specification
 
 class VirtualMachineTest extends Specification {

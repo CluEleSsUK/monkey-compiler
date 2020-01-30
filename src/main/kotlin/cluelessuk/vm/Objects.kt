@@ -1,4 +1,4 @@
-package cluelessuk
+package cluelessuk.vm
 
 import cluelessuk.bytecode.from
 

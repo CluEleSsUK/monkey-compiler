@@ -1,12 +1,12 @@
-package cluelessuk
+package cluelessuk.bytecode
 
-import cluelessuk.bytecode.ByteEncoder
-import cluelessuk.bytecode.OpCode
 import cluelessuk.language.ExpressionStatement
 import cluelessuk.language.InfixExpression
 import cluelessuk.language.IntegerLiteral
 import cluelessuk.language.Node
 import cluelessuk.language.Program
+import cluelessuk.vm.MInteger
+import cluelessuk.vm.MObject
 
 
 sealed class Result<T>
