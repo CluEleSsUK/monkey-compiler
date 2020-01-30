@@ -11,22 +11,26 @@ import spock.lang.Specification
 
 class VirtualMachineTest extends Specification {
     def compiler = new Compiler()
-    def vm = new VirtualMachine()
 
-    def "Constant allocations return the correct reference to the constant pool"(String input, MObject expected) {
+    def "Constant allocations dereference from the constant pool"(String input, MObject expected) {
         given:
-        def program = new Parser(new Lexer(input)).parseProgram()
-        def compiled = compiler.compile(program)
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
 
         expect:
-        compiled instanceof Success
-        def runtimeOutput = vm.run(compiler.bytecode())
-        runtimeOutput.peek() == expected
+        output.peek() == expected
 
         where:
         input   | expected
-        "1"     | MInteger.from(0)
-        "2"     | MInteger.from(0)
-        "1 + 2" | MInteger.from(1)
+        "1"     | MInteger.from(1)
+        "2"     | MInteger.from(2)
+        "1 + 2" | MInteger.from(3)
+    }
+
+    def successfullyCompiled(String input) {
+        def program = new Parser(new Lexer(input)).parseProgram()
+        def compiled = compiler.compile(program)
+        assert (compiled instanceof Success)
+        return compiler.bytecode()
     }
 }

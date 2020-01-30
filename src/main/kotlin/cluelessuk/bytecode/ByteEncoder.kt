@@ -7,30 +7,9 @@ import java.nio.ByteOrder
 typealias Instruction = ByteArray
 typealias BytesRead = Int
 
-enum class OpCode {
-    CONSTANT;
-
-    fun byte(): Byte = this.ordinal.toByte()
-
-    companion object {
-        fun from(byte: Byte): OpCode {
-            return values()[byte.toInt()]
-        }
-
-        fun width(): Int {
-            return 1
-        }
-    }
-}
-
-data class OpCodeDefinition(val name: String, val operandWidthBytes: List<Int>)
-
-val opcodeDefinitions = mapOf(
-    OpCode.CONSTANT to OpCodeDefinition("OpConstant", listOf(2))
-)
-
 class ByteEncoder {
 
+    fun make(opcode: OpCode): Instruction = make(opcode, emptyList())
     fun make(opcode: OpCode, operand: UShort): Instruction = make(opcode, listOf(operand))
     fun make(opcode: OpCode, operands: List<UShort>): Instruction {
         val definition = opcodeDefinitions[opcode] ?: return ByteBuffer.allocate(0).array()
@@ -115,7 +94,8 @@ fun asString(instruction: Instruction): Pair<String, BytesRead> {
     }
 
     val (operands, operandBytes) = ByteEncoder().readOperands(instruction)
-    val output = "$opcode ${operands.joinToString(separator = ",")}"
+    val spaceIfHasOperands = if (operands.isEmpty()) "" else " "
+    val output = "$opcode${operands.joinToString(prefix = spaceIfHasOperands, separator = ",")}"
     val bytesRead = OpCode.width() + operandBytes
 
     return output to bytesRead

@@ -36,7 +36,11 @@ class CompilerTest {
         val input = "1 + 2"
         val program = Parser(Lexer(input)).parseProgram()
         val makeConstant = { memoryAddress: Int -> encoder.make(OpCode.CONSTANT, memoryAddress.toUShort()) }
-        val expectedConstantsWithAddress = arrayOf(makeConstant(0), makeConstant(1))
+        val expectedConstantsWithAddress = arrayOf(
+            makeConstant(0),
+            makeConstant(1),
+            encoder.make(OpCode.ADD)
+        )
 
         // when
         val result = compiler.compile(program)

@@ -54,7 +54,10 @@ class Compiler {
             return right
         }
 
-        return Successful
+        return when (node.operator) {
+            "+" -> Success(emit(OpCode.ADD))
+            else -> Successful
+        }
     }
 
     private fun compileIntegerLiteral(node: IntegerLiteral): Result<*> {

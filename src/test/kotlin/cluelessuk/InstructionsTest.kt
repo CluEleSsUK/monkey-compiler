@@ -15,10 +15,10 @@ class InstructionsTest {
         // given
         val instructions = byteArrayOf(
             *encoder.make(OpCode.CONSTANT, 1.toUShort()),
-            *encoder.make(OpCode.CONSTANT, 2.toUShort()),
+            *encoder.make(OpCode.ADD, emptyList()),
             *encoder.make(OpCode.CONSTANT, 65534.toUShort())
         )
-        val expected = "0000 CONSTANT 1\n0003 CONSTANT 2\n0006 CONSTANT 65534\n"
+        val expected = "0000 CONSTANT 1\n0003 ADD\n0004 CONSTANT 65534\n"
 
         // when
         val result = Instructions(instructions).toString()

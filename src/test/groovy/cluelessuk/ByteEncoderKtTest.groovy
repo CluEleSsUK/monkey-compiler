@@ -4,6 +4,7 @@ import cluelessuk.bytecode.ByteEncoder
 import cluelessuk.bytecode.OpCode
 import kotlin.UShortArray
 import spock.lang.Specification
+import static cluelessuk.TestUtils.*
 
 class ByteEncoderKtTest extends Specification {
     def bytecode = new ByteEncoder()
@@ -21,6 +22,7 @@ class ByteEncoderKtTest extends Specification {
         OpCode.CONSTANT | ushortArrayOf(1)     | [OpCode.CONSTANT.byte(), 0, 1] as byte[]
         OpCode.CONSTANT | ushortArrayOf(65534) | [OpCode.CONSTANT.byte(), 255, 254] as byte[]
         OpCode.CONSTANT | ushortArrayOf(65535) | [OpCode.CONSTANT.byte(), 255, 255] as byte[]
+        OpCode.ADD      | ushortArrayOf()      | [OpCode.ADD.byte()] as byte[]
     }
 
     def "Reading operands returns the correct operands"(OpCode opcode, UShortArray operands, int bytesRead) {
@@ -35,24 +37,8 @@ class ByteEncoderKtTest extends Specification {
         where:
         opcode          | operands             | bytesRead
         OpCode.CONSTANT | ushortArrayOf(65534) | 2
+        OpCode.ADD      | ushortArrayOf()      | 0
     }
 
-    def ushortArrayOf(Integer... nums) {
-        return new UShortArray(nums as short[])
-    }
-
-    def equalValues(UShortArray first, UShortArray second) {
-        if (first.size != second.size) {
-            return false
-        }
-
-        for (int i = 0; i < first.size; i++) {
-            if (first[i] != second[i]) {
-                return false
-            }
-        }
-
-        return true
-    }
 
 }
