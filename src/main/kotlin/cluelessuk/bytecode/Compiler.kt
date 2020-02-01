@@ -11,7 +11,7 @@ import cluelessuk.vm.MObject
 
 sealed class Result<T>
 data class Success<T>(val value: T) : Result<T>()
-data class Error(val reasons: List<String>) : Result<Unit>()
+data class Failure(val reasons: List<String>) : Result<Unit>()
 
 val Successful = Success(Unit)
 
@@ -33,24 +33,24 @@ class Compiler {
             is ExpressionStatement -> compile(node.expression)
             is InfixExpression -> compileInfixExpression(node)
             is IntegerLiteral -> compileIntegerLiteral(node)
-            else -> Error(listOf("Node not supported ${node.tokenLiteral()}"))
+            else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
         }
     }
 
     private fun compileProgram(node: Program): Result<*> {
         return node.statements
             .map(::compile)
-            .firstOrNull { it is Error }
+            .firstOrNull { it is Failure }
             ?: Successful
     }
 
     private fun compileInfixExpression(node: InfixExpression): Result<*> {
         val left = compile(node.left)
-        if (left is Error) {
+        if (left is Failure) {
             return left
         }
         val right = compile(node.right)
-        if (right is Error) {
+        if (right is Failure) {
             return right
         }
 
