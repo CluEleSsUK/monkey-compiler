@@ -11,9 +11,7 @@ import cluelessuk.vm.MObject
 
 sealed class Result<T>
 data class Success<T>(val value: T) : Result<T>()
-data class Failure(val reasons: List<String>) : Result<Unit>()
-
-val Successful = Success(Unit)
+data class Failure(val reasons: List<String>) : Result<Bytecode>()
 
 class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
 
@@ -23,11 +21,7 @@ class Compiler {
     private val output = CompiledInstructions()
     private val constants = ConstantPool()
 
-    fun bytecode(): Bytecode {
-        return Bytecode(output.get(), constants.get())
-    }
-
-    fun compile(node: Node): Result<*> {
+    fun compile(node: Node): Result<Bytecode> {
         return when (node) {
             is Program -> compileProgram(node)
             is ExpressionStatement -> compile(node.expression)
@@ -37,14 +31,14 @@ class Compiler {
         }
     }
 
-    private fun compileProgram(node: Program): Result<*> {
+    private fun compileProgram(node: Program): Result<Bytecode> {
         return node.statements
             .map(::compile)
             .firstOrNull { it is Failure }
-            ?: Successful
+            ?: Success(bytecode())
     }
 
-    private fun compileInfixExpression(node: InfixExpression): Result<*> {
+    private fun compileInfixExpression(node: InfixExpression): Result<Bytecode> {
         val left = compile(node.left)
         if (left is Failure) {
             return left
@@ -55,20 +49,27 @@ class Compiler {
         }
 
         return when (node.operator) {
-            "+" -> Success(emit(OpCode.ADD))
-            else -> Successful
+            "+" -> {
+                emit(OpCode.ADD)
+                Success(bytecode())
+            }
+            else -> Failure(listOf("Operator not supported: ${node.operator}"))
         }
     }
 
-    private fun compileIntegerLiteral(node: IntegerLiteral): Result<*> {
+    private fun compileIntegerLiteral(node: IntegerLiteral): Result<Bytecode> {
         val pointerToConstant = constants.addConstantForIndex(MInteger(node.value.toUShort()))
         emit(OpCode.CONSTANT, pointerToConstant)
-        return Successful
+        return Success(bytecode())
     }
 
     private fun emit(opcode: OpCode, vararg operands: UShort): UShort {
         val instruction = byteEncoder.make(opcode, operands.toList())
         return output.addInstructionForIndex(instruction)
+    }
+
+    private fun bytecode(): Bytecode {
+        return Bytecode(output.get(), constants.get())
     }
 }
 

@@ -4,6 +4,7 @@ import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
 import cluelessuk.bytecode.Compiler
 import cluelessuk.bytecode.Failure
+import cluelessuk.bytecode.Success
 import cluelessuk.language.Program
 
 const val exitKeyword = "exit"
@@ -31,12 +32,15 @@ fun startRepl() {
             continue
         }
 
-        val output = compiler.compile(program)
-        if (output is Failure) {
-            renderCompileError(output)
-        }
+        when (val bytecode = compiler.compile(program)) {
+            is Failure -> renderCompileError(bytecode)
+            is Success -> {
+                val vm = VirtualMachine(bytecode.value)
+                val topOfStack = vm.run().peek()
 
-        render(VirtualMachine(compiler.bytecode()).run().peek() ?: MInteger.from(0))
+                render(topOfStack ?: MInteger.from(0))
+            }
+        }
     }
 }
 
