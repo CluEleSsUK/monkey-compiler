@@ -7,6 +7,7 @@ import cluelessuk.language.Node
 import cluelessuk.language.Program
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
+import java.lang.Error
 
 
 sealed class Result<T>
@@ -24,7 +25,7 @@ class Compiler {
     fun compile(node: Node): Result<Bytecode> {
         return when (node) {
             is Program -> compileProgram(node)
-            is ExpressionStatement -> compile(node.expression)
+            is ExpressionStatement -> compileExpressionStatement(node)
             is InfixExpression -> compileInfixExpression(node)
             is IntegerLiteral -> compileIntegerLiteral(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
@@ -36,6 +37,16 @@ class Compiler {
             .map(::compile)
             .firstOrNull { it is Failure }
             ?: Success(bytecode())
+    }
+
+    private fun compileExpressionStatement(node: ExpressionStatement): Result<Bytecode> {
+        val expressionCompilation = compile(node.expression)
+        if (expressionCompilation is Error) {
+            return expressionCompilation
+        }
+
+        emit(OpCode.POP)
+        return Success(bytecode())
     }
 
     private fun compileInfixExpression(node: InfixExpression): Result<Bytecode> {

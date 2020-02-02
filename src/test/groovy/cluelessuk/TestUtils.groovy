@@ -37,7 +37,7 @@ class TestUtils {
 
     static boolean deepEqual(byte[][] arr1, byte[][] arr2) {
         if (arr1.length != arr2.length) {
-            return true
+            return false
         }
 
         for (int i = 0; i < arr1.length; i++) {

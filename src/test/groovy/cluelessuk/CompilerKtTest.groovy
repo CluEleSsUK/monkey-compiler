@@ -30,8 +30,9 @@ class CompilerKtTest extends Specification {
 
         where:
         input   | expected
-        "1"     | [makeConstant(0)]
-        "1 + 2" | [makeConstant(0), makeConstant(1), encoder.make(OpCode.ADD)]
+        "1"     | [makeConstant(0), encoder.make(OpCode.POP)]
+        "1 + 2" | [makeConstant(0), makeConstant(1), encoder.make(OpCode.ADD), encoder.make(OpCode.POP)]
+        "1; 2"  | [makeConstant(0), encoder.make(OpCode.POP), makeConstant(1), encoder.make(OpCode.POP)]
     }
 
     def "Compiler emits the expected constant pool"(String input, MObject[] expected) {

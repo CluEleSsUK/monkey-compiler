@@ -2,7 +2,8 @@ package cluelessuk.bytecode
 
 enum class OpCode {
     CONSTANT,
-    ADD;
+    ADD,
+    POP;
 
     fun byte(): Byte = this.ordinal.toByte()
 
@@ -17,9 +18,10 @@ enum class OpCode {
     }
 }
 
-data class OpCodeDefinition(val name: String, val operandWidthBytes: List<Int>)
+data class OpCodeDefinition(val name: String, val operandWidthBytes: List<Int> = emptyList())
 
 val opcodeDefinitions = mapOf(
-    OpCode.CONSTANT to OpCodeDefinition("OpConstant", listOf(2)),
-    OpCode.ADD to OpCodeDefinition("OpAdd", emptyList())
+    OpCode.CONSTANT to OpCodeDefinition("OpConstant", listOf(UShort.SIZE_BYTES)),
+    OpCode.ADD to OpCodeDefinition("OpAdd"),
+    OpCode.POP to OpCodeDefinition("OpPop")
 )
