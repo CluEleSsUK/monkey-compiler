@@ -3,6 +3,7 @@ package cluelessuk.vm
 import cluelessuk.bytecode.from
 
 sealed class MObject(val type: String)
+
 data class MInteger(val value: UShort) : MObject("INTEGER") {
     companion object {
         @JvmStatic
@@ -22,13 +23,8 @@ data class MInteger(val value: UShort) : MObject("INTEGER") {
 
 data class MBoolean(val value: Boolean) : MObject("BOOLEAN") {
     companion object {
-        fun from(input: Boolean): MBoolean {
-            return if (input) True else False
-        }
+        val TRUE = MBoolean(true)
+        val FALSE = MBoolean(false)
     }
 }
 
-data class MString(val value: String) : MObject("STRING")
-
-val True = MBoolean(true)
-val False = MBoolean(false)

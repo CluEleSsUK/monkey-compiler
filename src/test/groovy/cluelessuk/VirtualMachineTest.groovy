@@ -5,6 +5,7 @@ import cluelessuk.bytecode.Compiler
 import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
+import cluelessuk.vm.MBoolean
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
 import cluelessuk.vm.VirtualMachine
@@ -28,6 +29,8 @@ class VirtualMachineTest extends Specification {
         "1 + 2"            | MInteger.from(3)
         "10 * 10 / 10 - 9" | MInteger.from(1)
         "10 - 9 * 10 / 10" | MInteger.from(1)
+        "true"             | new MBoolean(true)
+        "false"            | new MBoolean(false)
     }
 
     private Bytecode successfullyCompiled(String input) {

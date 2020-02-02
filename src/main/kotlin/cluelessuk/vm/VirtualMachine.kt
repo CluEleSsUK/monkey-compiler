@@ -20,6 +20,8 @@ data class VirtualMachine(
                 OpCode.MULTIPLY,
                 OpCode.DIVIDE -> runBinaryOperation(opcode)
                 OpCode.POP -> stack.pop()
+                OpCode.TRUE -> stack.push(MBoolean.TRUE)
+                OpCode.FALSE -> stack.push(MBoolean.FALSE)
             }
         }
 

@@ -27,12 +27,13 @@ class CompilerKtTest extends Specification {
         deepEqual(compiler.output.get(), expected)
 
         where:
-        input       | expected
-        "1"         | [bytecodeConstant(0), bytecode(OpCode.POP)]
-        "1 + 2"     | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.ADD), bytecode(OpCode.POP)]
-        "1; 2"      | [bytecodeConstant(0), bytecode(OpCode.POP), bytecodeConstant(1), bytecode(OpCode.POP)]
-        "1 * 2"     | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.MULTIPLY), bytecode(OpCode.POP)]
-        "1 / 2 - 3" | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.DIVIDE), bytecodeConstant(2), bytecode(OpCode.SUBTRACT), bytecode(OpCode.POP)]
+        input         | expected
+        "1"           | [bytecodeConstant(0), bytecode(OpCode.POP)]
+        "1 + 2"       | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.ADD), bytecode(OpCode.POP)]
+        "1; 2"        | [bytecodeConstant(0), bytecode(OpCode.POP), bytecodeConstant(1), bytecode(OpCode.POP)]
+        "1 * 2"       | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.MULTIPLY), bytecode(OpCode.POP)]
+        "1 / 2 - 3"   | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.DIVIDE), bytecodeConstant(2), bytecode(OpCode.SUBTRACT), bytecode(OpCode.POP)]
+        "true; false" | [bytecode(OpCode.TRUE), bytecode(OpCode.POP), bytecode(OpCode.FALSE), bytecode(OpCode.POP)]
     }
 
     def "Compiler emits the expected constant pool"(String input, MObject[] expected) {

@@ -1,5 +1,6 @@
 package cluelessuk.bytecode
 
+import cluelessuk.language.BooleanLiteral
 import cluelessuk.language.ExpressionStatement
 import cluelessuk.language.InfixExpression
 import cluelessuk.language.IntegerLiteral
@@ -28,6 +29,7 @@ class Compiler {
             is ExpressionStatement -> compileExpressionStatement(node)
             is InfixExpression -> compileInfixExpression(node)
             is IntegerLiteral -> compileIntegerLiteral(node)
+            is BooleanLiteral -> compileBooleanLiteral(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
         }
     }
@@ -68,9 +70,16 @@ class Compiler {
     }
 
     private fun compileIntegerLiteral(node: IntegerLiteral): Result<Bytecode> {
-        val pointerToConstant = constants.addConstantForIndex(MInteger(node.value.toUShort()))
-        emit(OpCode.CONSTANT, pointerToConstant)
-        return Success(bytecode())
+        return thenSuccessBytecode {
+            val pointerToConstant = constants.addConstantForIndex(MInteger(node.value.toUShort()))
+            emit(OpCode.CONSTANT, pointerToConstant)
+        }
+    }
+
+    private fun compileBooleanLiteral(node: BooleanLiteral): Result<Bytecode> {
+        return thenSuccessBytecode {
+            if (node.value) emit(OpCode.TRUE) else emit(OpCode.FALSE)
+        }
     }
 
     private fun emit(opcode: OpCode, vararg operands: UShort): UShort {

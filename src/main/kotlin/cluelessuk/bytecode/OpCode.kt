@@ -6,7 +6,9 @@ enum class OpCode {
     ADD,
     SUBTRACT,
     MULTIPLY,
-    DIVIDE;
+    DIVIDE,
+    TRUE,
+    FALSE;
 
     fun byte(): Byte = this.ordinal.toByte()
 
@@ -29,5 +31,7 @@ val opcodeDefinitions = mapOf(
     OpCode.ADD to OpCodeDefinition("OpAdd"),
     OpCode.SUBTRACT to OpCodeDefinition("OpSubstract"),
     OpCode.MULTIPLY to OpCodeDefinition("OpMultiply"),
-    OpCode.DIVIDE to OpCodeDefinition("OpDivide")
+    OpCode.DIVIDE to OpCodeDefinition("OpDivide"),
+    OpCode.TRUE to OpCodeDefinition("OpTrue"),
+    OpCode.FALSE to OpCodeDefinition("OpFalse")
 )
