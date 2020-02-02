@@ -31,8 +31,12 @@ class TestUtils {
         return true
     }
 
-    static makeConstant(int memoryAddress) {
+    static bytecodeConstant(int memoryAddress) {
         return encoder.make(OpCode.CONSTANT, ushortListOf(memoryAddress))
+    }
+
+    static bytecode(OpCode opcode) {
+        return encoder.make(opcode)
     }
 
     static boolean deepEqual(byte[][] arr1, byte[][] arr2) {

@@ -45,8 +45,7 @@ class Compiler {
             return expressionCompilation
         }
 
-        emit(OpCode.POP)
-        return Success(bytecode())
+        return thenSuccessBytecode { emit(OpCode.POP) }
     }
 
     private fun compileInfixExpression(node: InfixExpression): Result<Bytecode> {
@@ -60,10 +59,10 @@ class Compiler {
         }
 
         return when (node.operator) {
-            "+" -> {
-                emit(OpCode.ADD)
-                Success(bytecode())
-            }
+            "+" -> thenSuccessBytecode { emit(OpCode.ADD) }
+            "-" -> thenSuccessBytecode { emit(OpCode.SUBTRACT) }
+            "*" -> thenSuccessBytecode { emit(OpCode.MULTIPLY) }
+            "/" -> thenSuccessBytecode { emit(OpCode.DIVIDE) }
             else -> Failure(listOf("Operator not supported: ${node.operator}"))
         }
     }
@@ -81,6 +80,11 @@ class Compiler {
 
     private fun bytecode(): Bytecode {
         return Bytecode(output.get(), constants.get())
+    }
+
+    private fun thenSuccessBytecode(fn: () -> Unit): Success<Bytecode> {
+        fn()
+        return Success(bytecode())
     }
 }
 

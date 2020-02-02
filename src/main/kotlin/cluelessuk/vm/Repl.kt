@@ -34,10 +34,11 @@ fun startRepl() {
 
         when (val bytecode = compiler.compile(program)) {
             is Failure -> renderCompileError(bytecode)
-            is Success -> {
-                val vm = VirtualMachine(bytecode.value)
-                render(vm.run().result())
-            }
+            is Success -> render(
+                VirtualMachine(bytecode.value)
+                    .run()
+                    .result()
+            )
         }
     }
 }

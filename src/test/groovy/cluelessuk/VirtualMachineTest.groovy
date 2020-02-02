@@ -13,7 +13,7 @@ import spock.lang.Specification
 class VirtualMachineTest extends Specification {
     def compiler = new Compiler()
 
-    def "Constant allocations dereference from the constant pool"(String input, MObject expected) {
+    def "Constant allocations dereference the correct value from the constant pool"(String input, MObject expected) {
         given:
         def bytecode = successfullyCompiled(input)
         def output = new VirtualMachine(bytecode).run()
@@ -22,10 +22,12 @@ class VirtualMachineTest extends Specification {
         output.result() == expected
 
         where:
-        input   | expected
-        "1"     | MInteger.from(1)
-        "2"     | MInteger.from(2)
-        "1 + 2" | MInteger.from(3)
+        input              | expected
+        "1"                | MInteger.from(1)
+        "2"                | MInteger.from(2)
+        "1 + 2"            | MInteger.from(3)
+        "10 * 10 / 10 - 9" | MInteger.from(1)
+        "10 - 9 * 10 / 10" | MInteger.from(1)
     }
 
     private Bytecode successfullyCompiled(String input) {

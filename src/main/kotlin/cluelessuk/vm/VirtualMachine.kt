@@ -4,8 +4,6 @@ import cluelessuk.bytecode.Bytecode
 import cluelessuk.bytecode.Instruction
 import cluelessuk.bytecode.OpCode
 import java.lang.RuntimeException
-import java.util.ArrayDeque
-import java.util.Deque
 
 data class VirtualMachine(
     private val bytecode: Bytecode
@@ -15,9 +13,12 @@ data class VirtualMachine(
 
     fun run(): VirtualMachine {
         bytecode.instructions.forEach {
-            when (opcodeFrom(it)) {
+            when (val opcode = opcodeFrom(it)) {
                 OpCode.CONSTANT -> runConstant(it)
-                OpCode.ADD -> runAdd()
+                OpCode.ADD,
+                OpCode.SUBTRACT,
+                OpCode.MULTIPLY,
+                OpCode.DIVIDE -> runBinaryOperation(opcode)
                 OpCode.POP -> stack.pop()
             }
         }
@@ -30,18 +31,26 @@ data class VirtualMachine(
         stack.push(dereference(pointer))
     }
 
-    private fun runAdd() {
+    private fun runBinaryOperation(opcode: OpCode) {
         if (stack.size() < 2) {
             return
         }
 
-        val left = stack.pop()
         val right = stack.pop()
+        val left = stack.pop()
         if (left !is MInteger || right !is MInteger) {
             throw RuntimeException("Addition only supports MIntegers")
         }
 
-        stack.push(MInteger.from((left.value + right.value).toInt()))
+        val expressionResult = when (opcode) {
+            OpCode.ADD -> MInteger.from(left.value + right.value)
+            OpCode.SUBTRACT -> MInteger.from(left.value - right.value)
+            OpCode.MULTIPLY -> MInteger.from(left.value * right.value)
+            OpCode.DIVIDE -> MInteger.from(left.value / right.value)
+            else -> throw RuntimeException("Infix opcode $opcode not supported")
+        }
+
+        stack.push(expressionResult)
     }
 
     private fun dereference(pointer: MInteger): MObject? {

@@ -8,6 +8,9 @@ class CallStack<T> {
     var lastPoppedValue: T? = null
 
     fun push(value: T?): CallStack<T> {
+        if (value == null) {
+            return this
+        }
         stack.push(value)
         return this
     }

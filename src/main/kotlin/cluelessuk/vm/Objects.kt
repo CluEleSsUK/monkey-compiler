@@ -10,6 +10,10 @@ data class MInteger(val value: UShort) : MObject("INTEGER") {
             return MInteger(integer.toUShort())
         }
 
+        fun from(integer: UInt): MInteger {
+            return MInteger(integer.toUShort())
+        }
+
         fun from(b1: Byte, b2: Byte): MInteger {
             return MInteger(UShort.from(b1, b2))
         }

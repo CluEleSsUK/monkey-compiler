@@ -1,8 +1,8 @@
 package cluelessuk
 
 import cluelessuk.bytecode.ByteEncoder
-import cluelessuk.bytecode.Instructions
 import cluelessuk.bytecode.OpCode
+import cluelessuk.bytecode.prettyPrint
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -21,7 +21,7 @@ class InstructionsTest {
         val expected = "0000 CONSTANT 1\n0003 ADD\n0004 CONSTANT 65534\n"
 
         // when
-        val result = Instructions(instructions).toString()
+        val result = instructions.prettyPrint()
 
         // then
         assertEquals(expected, result)

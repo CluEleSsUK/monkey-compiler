@@ -1,6 +1,5 @@
 package cluelessuk
 
-import cluelessuk.bytecode.ByteEncoder
 import cluelessuk.bytecode.OpCode
 import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
@@ -17,7 +16,6 @@ import spock.lang.Specification
 class CompilerKtTest extends Specification {
 
     def compiler = new Compiler()
-    static def encoder = new ByteEncoder()
 
     def "Compiler emits the expected code with references to the constant pool"(String input, byte[][] expected) {
         given:
@@ -29,10 +27,12 @@ class CompilerKtTest extends Specification {
         deepEqual(compiler.output.get(), expected)
 
         where:
-        input   | expected
-        "1"     | [makeConstant(0), encoder.make(OpCode.POP)]
-        "1 + 2" | [makeConstant(0), makeConstant(1), encoder.make(OpCode.ADD), encoder.make(OpCode.POP)]
-        "1; 2"  | [makeConstant(0), encoder.make(OpCode.POP), makeConstant(1), encoder.make(OpCode.POP)]
+        input       | expected
+        "1"         | [bytecodeConstant(0), bytecode(OpCode.POP)]
+        "1 + 2"     | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.ADD), bytecode(OpCode.POP)]
+        "1; 2"      | [bytecodeConstant(0), bytecode(OpCode.POP), bytecodeConstant(1), bytecode(OpCode.POP)]
+        "1 * 2"     | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.MULTIPLY), bytecode(OpCode.POP)]
+        "1 / 2 - 3" | [bytecodeConstant(0), bytecodeConstant(1), bytecode(OpCode.DIVIDE), bytecodeConstant(2), bytecode(OpCode.SUBTRACT), bytecode(OpCode.POP)]
     }
 
     def "Compiler emits the expected constant pool"(String input, MObject[] expected) {
