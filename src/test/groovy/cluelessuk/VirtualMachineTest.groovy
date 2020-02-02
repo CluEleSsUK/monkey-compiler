@@ -1,5 +1,6 @@
 package cluelessuk
 
+import cluelessuk.bytecode.Bytecode
 import cluelessuk.bytecode.Compiler
 import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
@@ -18,7 +19,7 @@ class VirtualMachineTest extends Specification {
         def output = new VirtualMachine(bytecode).run()
 
         expect:
-        output.peek() == expected
+        output.result() == expected
 
         where:
         input   | expected
@@ -27,7 +28,7 @@ class VirtualMachineTest extends Specification {
         "1 + 2" | MInteger.from(3)
     }
 
-    def successfullyCompiled(String input) {
+    private Bytecode successfullyCompiled(String input) {
         def program = new Parser(new Lexer(input)).parseProgram()
         def compiled = compiler.compile(program)
         assert (compiled instanceof Success)

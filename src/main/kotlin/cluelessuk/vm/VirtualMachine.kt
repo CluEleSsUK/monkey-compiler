@@ -10,14 +10,15 @@ import java.util.Deque
 data class VirtualMachine(
     private val bytecode: Bytecode
 ) {
-    private val stack: Deque<MObject> = ArrayDeque()
-    fun peek(): MObject? = stack.peek()
+    private val stack = CallStack<MObject>()
+    fun result(): MObject? = stack.lastPoppedValue
 
     fun run(): VirtualMachine {
         bytecode.instructions.forEach {
             when (opcodeFrom(it)) {
                 OpCode.CONSTANT -> runConstant(it)
                 OpCode.ADD -> runAdd()
+                OpCode.POP -> stack.pop()
             }
         }
 
@@ -30,12 +31,16 @@ data class VirtualMachine(
     }
 
     private fun runAdd() {
-        if (stack.size < 2) {
+        if (stack.size() < 2) {
             return
         }
 
-        val left = stack.pop() as MInteger
-        val right = stack.pop() as MInteger
+        val left = stack.pop()
+        val right = stack.pop()
+        if (left !is MInteger || right !is MInteger) {
+            throw RuntimeException("Addition only supports MIntegers")
+        }
+
         stack.push(MInteger.from((left.value + right.value).toInt()))
     }
 

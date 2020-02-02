@@ -36,9 +36,7 @@ fun startRepl() {
             is Failure -> renderCompileError(bytecode)
             is Success -> {
                 val vm = VirtualMachine(bytecode.value)
-                val topOfStack = vm.run().peek()
-
-                render(topOfStack ?: MInteger.from(0))
+                render(vm.run().result())
             }
         }
     }
@@ -54,7 +52,7 @@ fun readConsoleInput(): String? {
     return readLine()
 }
 
-fun render(obj: MObject) {
+fun render(obj: MObject?) {
     println(obj)
 }
 
