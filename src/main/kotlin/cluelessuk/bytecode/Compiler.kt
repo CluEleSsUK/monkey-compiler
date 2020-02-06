@@ -11,9 +11,26 @@ import cluelessuk.vm.MObject
 import java.lang.Error
 
 
-sealed class Result<T>
+sealed class Result<T> {
+    fun <U> flatMap(fn: (Result<T>) -> Result<U>): Result<U> {
+        if (this is Failure) {
+            return Failure(this.reasons)
+        }
+        return fn(this)
+    }
+
+    fun then(block: () -> Unit): Result<T> {
+        if (this is Failure) {
+            return Failure(this.reasons)
+        }
+
+        block()
+        return this
+    }
+}
+
 data class Success<T>(val value: T) : Result<T>()
-data class Failure(val reasons: List<String>) : Result<Bytecode>()
+data class Failure<T>(val reasons: List<String>) : Result<T>()
 
 class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
 
@@ -47,37 +64,42 @@ class Compiler {
             return expressionCompilation
         }
 
-        return thenSuccessBytecode { emit(OpCode.POP) }
+        return success { emit(OpCode.POP) }
     }
 
     private fun compileInfixExpression(node: InfixExpression): Result<Bytecode> {
-        val left = compile(node.left)
-        if (left is Failure) {
-            return left
-        }
-        val right = compile(node.right)
-        if (right is Failure) {
-            return right
+        val result = when (node.operator) {
+            "<" -> compile(node.right)
+                .flatMap { compile(node.left) }
+                .then { emit(OpCode.GREATER_THAN) }
+            else -> compile(node.left)
+                .flatMap { compile(node.right) }
+                .then {
+                    when (node.operator) {
+                        "+" -> emit(OpCode.ADD)
+                        "-" -> emit(OpCode.SUBTRACT)
+                        "*" -> emit(OpCode.MULTIPLY)
+                        "/" -> emit(OpCode.DIVIDE)
+                        "==" -> emit(OpCode.EQUAL)
+                        "!=" -> emit(OpCode.NOT_EQUAL)
+                        ">" -> emit(OpCode.GREATER_THAN)
+                        else -> Failure<Bytecode>(listOf("Operator not supported: ${node.operator}"))
+                    }
+                }
         }
 
-        return when (node.operator) {
-            "+" -> thenSuccessBytecode { emit(OpCode.ADD) }
-            "-" -> thenSuccessBytecode { emit(OpCode.SUBTRACT) }
-            "*" -> thenSuccessBytecode { emit(OpCode.MULTIPLY) }
-            "/" -> thenSuccessBytecode { emit(OpCode.DIVIDE) }
-            else -> Failure(listOf("Operator not supported: ${node.operator}"))
-        }
+        return result.flatMap { Success(bytecode()) }
     }
 
     private fun compileIntegerLiteral(node: IntegerLiteral): Result<Bytecode> {
-        return thenSuccessBytecode {
+        return success {
             val pointerToConstant = constants.addConstantForIndex(MInteger(node.value.toUShort()))
             emit(OpCode.CONSTANT, pointerToConstant)
         }
     }
 
     private fun compileBooleanLiteral(node: BooleanLiteral): Result<Bytecode> {
-        return thenSuccessBytecode {
+        return success {
             if (node.value) emit(OpCode.TRUE) else emit(OpCode.FALSE)
         }
     }
@@ -91,7 +113,7 @@ class Compiler {
         return Bytecode(output.get(), constants.get())
     }
 
-    private fun thenSuccessBytecode(fn: () -> Unit): Success<Bytecode> {
+    private fun success(fn: () -> Unit): Success<Bytecode> {
         fn()
         return Success(bytecode())
     }

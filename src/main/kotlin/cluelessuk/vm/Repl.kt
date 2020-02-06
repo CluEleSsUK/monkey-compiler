@@ -43,7 +43,7 @@ fun startRepl() {
     }
 }
 
-fun renderCompileError(output: Failure) {
+fun renderCompileError(output: Failure<*>) {
     println("Compilation failed:")
     output.reasons.forEach(::println)
 }

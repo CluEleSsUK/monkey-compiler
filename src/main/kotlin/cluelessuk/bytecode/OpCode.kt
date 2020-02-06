@@ -8,7 +8,10 @@ enum class OpCode {
     MULTIPLY,
     DIVIDE,
     TRUE,
-    FALSE;
+    FALSE,
+    EQUAL,
+    NOT_EQUAL,
+    GREATER_THAN;
 
     fun byte(): Byte = this.ordinal.toByte()
 
@@ -33,5 +36,8 @@ val opcodeDefinitions = mapOf(
     OpCode.MULTIPLY to OpCodeDefinition("OpMultiply"),
     OpCode.DIVIDE to OpCodeDefinition("OpDivide"),
     OpCode.TRUE to OpCodeDefinition("OpTrue"),
-    OpCode.FALSE to OpCodeDefinition("OpFalse")
+    OpCode.FALSE to OpCodeDefinition("OpFalse"),
+    OpCode.EQUAL to OpCodeDefinition("OpEqual"),
+    OpCode.NOT_EQUAL to OpCodeDefinition("OpNotEqual"),
+    OpCode.GREATER_THAN to OpCodeDefinition("OpGreaterThan")
 )
