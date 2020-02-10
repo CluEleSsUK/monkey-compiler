@@ -23,14 +23,21 @@ class VirtualMachineTest extends Specification {
         output.result() == expected
 
         where:
-        input              | expected
-        "1"                | MInteger.from(1)
-        "2"                | MInteger.from(2)
-        "1 + 2"            | MInteger.from(3)
-        "10 * 10 / 10 - 9" | MInteger.from(1)
-        "10 - 9 * 10 / 10" | MInteger.from(1)
-        "true"             | new MBoolean(true)
-        "false"            | new MBoolean(false)
+        input                | expected
+        "1"                  | MInteger.from(1)
+        "2"                  | MInteger.from(2)
+        "1 + 2"              | MInteger.from(3)
+        "10 * 10 / 10 - 9"   | MInteger.from(1)
+        "10 - 9 * 10 / 10"   | MInteger.from(1)
+        "true"               | new MBoolean(true)
+        "false"              | new MBoolean(false)
+        "true == true"       | new MBoolean(true)
+        "true != true"       | new MBoolean(false)
+        "true == false"      | new MBoolean(false)
+        "2 > 1"              | new MBoolean(true)
+        "2 < 1"              | new MBoolean(false)
+        "(2 > 1) == false"   | new MBoolean(false)
+        "(10 + 10) / 10 > 2" | new MBoolean(false)
     }
 
     private Bytecode successfullyCompiled(String input) {

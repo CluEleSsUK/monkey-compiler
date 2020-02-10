@@ -10,28 +10,6 @@ import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
 import java.lang.Error
 
-
-sealed class Result<T> {
-    fun <U> flatMap(fn: (Result<T>) -> Result<U>): Result<U> {
-        if (this is Failure) {
-            return Failure(this.reasons)
-        }
-        return fn(this)
-    }
-
-    fun then(block: () -> Unit): Result<T> {
-        if (this is Failure) {
-            return Failure(this.reasons)
-        }
-
-        block()
-        return this
-    }
-}
-
-data class Success<T>(val value: T) : Result<T>()
-data class Failure<T>(val reasons: List<String>) : Result<T>()
-
 class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
 
 class Compiler {
@@ -40,7 +18,7 @@ class Compiler {
     private val output = CompiledInstructions()
     private val constants = ConstantPool()
 
-    fun compile(node: Node): Result<Bytecode> {
+    fun compile(node: Node): CompilationResult<Bytecode> {
         return when (node) {
             is Program -> compileProgram(node)
             is ExpressionStatement -> compileExpressionStatement(node)
@@ -51,54 +29,51 @@ class Compiler {
         }
     }
 
-    private fun compileProgram(node: Program): Result<Bytecode> {
+    private fun compileProgram(node: Program): CompilationResult<Bytecode> {
         return node.statements
             .map(::compile)
             .firstOrNull { it is Failure }
             ?: Success(bytecode())
     }
 
-    private fun compileExpressionStatement(node: ExpressionStatement): Result<Bytecode> {
-        val expressionCompilation = compile(node.expression)
-        if (expressionCompilation is Error) {
-            return expressionCompilation
-        }
-
-        return success { emit(OpCode.POP) }
+    private fun compileExpressionStatement(node: ExpressionStatement): CompilationResult<Bytecode> {
+        return compile(node.expression)
+            .then { emit(OpCode.POP) }
     }
 
-    private fun compileInfixExpression(node: InfixExpression): Result<Bytecode> {
+    private fun compile(left: Node, right: Node): CompilationResult<Bytecode> {
+        return compile(left).flatMap { compile(right) }
+    }
+
+    private fun compileInfixExpression(node: InfixExpression): CompilationResult<Bytecode> {
         val result = when (node.operator) {
-            "<" -> compile(node.right)
-                .flatMap { compile(node.left) }
+            "<" -> compile(node.right, node.left)
                 .then { emit(OpCode.GREATER_THAN) }
-            else -> compile(node.left)
-                .flatMap { compile(node.right) }
-                .then {
-                    when (node.operator) {
-                        "+" -> emit(OpCode.ADD)
-                        "-" -> emit(OpCode.SUBTRACT)
-                        "*" -> emit(OpCode.MULTIPLY)
-                        "/" -> emit(OpCode.DIVIDE)
-                        "==" -> emit(OpCode.EQUAL)
-                        "!=" -> emit(OpCode.NOT_EQUAL)
-                        ">" -> emit(OpCode.GREATER_THAN)
-                        else -> Failure<Bytecode>(listOf("Operator not supported: ${node.operator}"))
-                    }
+            else -> compile(node.left, node.right).then {
+                when (node.operator) {
+                    "+" -> emit(OpCode.ADD)
+                    "-" -> emit(OpCode.SUBTRACT)
+                    "*" -> emit(OpCode.MULTIPLY)
+                    "/" -> emit(OpCode.DIVIDE)
+                    "==" -> emit(OpCode.EQUAL)
+                    "!=" -> emit(OpCode.NOT_EQUAL)
+                    ">" -> emit(OpCode.GREATER_THAN)
+                    else -> Failure<Bytecode>(listOf("Operator not supported: ${node.operator}"))
                 }
+            }
         }
 
         return result.flatMap { Success(bytecode()) }
     }
 
-    private fun compileIntegerLiteral(node: IntegerLiteral): Result<Bytecode> {
+    private fun compileIntegerLiteral(node: IntegerLiteral): CompilationResult<Bytecode> {
         return success {
             val pointerToConstant = constants.addConstantForIndex(MInteger(node.value.toUShort()))
             emit(OpCode.CONSTANT, pointerToConstant)
         }
     }
 
-    private fun compileBooleanLiteral(node: BooleanLiteral): Result<Bytecode> {
+    private fun compileBooleanLiteral(node: BooleanLiteral): CompilationResult<Bytecode> {
         return success {
             if (node.value) emit(OpCode.TRUE) else emit(OpCode.FALSE)
         }

@@ -16,6 +16,10 @@ class CallStack<T> {
     }
 
     fun pop(): T? {
+        if (stack.isEmpty()) {
+            lastPoppedValue = null
+            return lastPoppedValue
+        }
         return stack.pop().also { lastPoppedValue = it }
     }
 

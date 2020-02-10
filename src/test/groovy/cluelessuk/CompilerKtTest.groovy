@@ -5,7 +5,6 @@ import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
 import cluelessuk.bytecode.Compiler
-import cluelessuk.vm.MBoolean
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
 

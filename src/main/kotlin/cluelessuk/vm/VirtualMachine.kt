@@ -18,7 +18,10 @@ data class VirtualMachine(
                 OpCode.ADD,
                 OpCode.SUBTRACT,
                 OpCode.MULTIPLY,
-                OpCode.DIVIDE -> runBinaryOperation(opcode)
+                OpCode.DIVIDE,
+                OpCode.EQUAL,
+                OpCode.NOT_EQUAL,
+                OpCode.GREATER_THAN -> runBinaryOperation(opcode)
                 OpCode.POP -> stack.pop()
                 OpCode.TRUE -> stack.push(MBoolean.TRUE)
                 OpCode.FALSE -> stack.push(MBoolean.FALSE)
@@ -40,19 +43,32 @@ data class VirtualMachine(
 
         val right = stack.pop()
         val left = stack.pop()
-        if (left !is MInteger || right !is MInteger) {
-            throw RuntimeException("Addition only supports MIntegers")
-        }
-
-        val expressionResult = when (opcode) {
-            OpCode.ADD -> MInteger.from(left.value + right.value)
-            OpCode.SUBTRACT -> MInteger.from(left.value - right.value)
-            OpCode.MULTIPLY -> MInteger.from(left.value * right.value)
-            OpCode.DIVIDE -> MInteger.from(left.value / right.value)
-            else -> throw RuntimeException("Infix opcode $opcode not supported")
+        val expressionResult = when {
+            left is MInteger && right is MInteger -> runIntegerBinaryOperation(opcode, left, right)
+            left is MBoolean && right is MBoolean -> runBooleanBinaryOperation(opcode, left, right)
+            else -> throw RuntimeException("Opcode not supported for the types provided (${left?.type}")
         }
 
         stack.push(expressionResult)
+    }
+
+    private fun runIntegerBinaryOperation(opcode: OpCode, left: MInteger, right: MInteger): MObject {
+        return when (opcode) {
+            OpCode.ADD -> left + right
+            OpCode.SUBTRACT -> left - right
+            OpCode.MULTIPLY -> left * right
+            OpCode.DIVIDE -> left / right
+            OpCode.GREATER_THAN -> MBoolean(left > right)
+            else -> throw RuntimeException("Infix opcode $opcode not supported for Integer")
+        }
+    }
+
+    private fun runBooleanBinaryOperation(opcode: OpCode, left: MBoolean, right: MBoolean): MObject {
+        return when (opcode) {
+            OpCode.EQUAL -> MBoolean(left == right)
+            OpCode.NOT_EQUAL -> MBoolean(left != right)
+            else -> throw RuntimeException("Infix opcode $opcode not supported for Boolean")
+        }
     }
 
     private fun dereference(pointer: MInteger): MObject? {
