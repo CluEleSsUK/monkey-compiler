@@ -22,6 +22,8 @@ data class VirtualMachine(
                 OpCode.EQUAL,
                 OpCode.NOT_EQUAL,
                 OpCode.GREATER_THAN -> runBinaryOperation(opcode)
+                OpCode.BANG -> runBangOperation()
+                OpCode.MINUS -> negateTopOperation()
                 OpCode.POP -> stack.pop()
                 OpCode.TRUE -> stack.push(MBoolean.TRUE)
                 OpCode.FALSE -> stack.push(MBoolean.FALSE)
@@ -77,6 +79,23 @@ data class VirtualMachine(
         }
 
         return bytecode.constants[pointer.value.toInt()]
+    }
+
+    private fun runBangOperation() {
+        when (stack.pop()) {
+            MBoolean.TRUE -> stack.push(MBoolean.FALSE)
+            MBoolean.FALSE -> stack.push(MBoolean.TRUE)
+            else -> stack.push(MBoolean.FALSE)
+        }
+    }
+
+    private fun negateTopOperation() {
+        val top = stack.pop()
+        if (top !is MInteger) {
+            throw RuntimeException("Cannot negate value $top of type ${top?.type}")
+        }
+
+        stack.push(MInteger.from(0 - top.value))
     }
 }
 

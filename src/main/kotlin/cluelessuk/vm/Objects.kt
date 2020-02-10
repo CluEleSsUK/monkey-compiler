@@ -4,7 +4,7 @@ import cluelessuk.bytecode.from
 
 sealed class MObject(val type: String)
 
-data class MInteger(val value: UShort) : MObject("INTEGER") {
+data class MInteger(val value: Int) : MObject("INTEGER") {
 
     operator fun plus(other: MInteger): MInteger {
         return from(this.value + other.value)
@@ -29,15 +29,19 @@ data class MInteger(val value: UShort) : MObject("INTEGER") {
     companion object {
         @JvmStatic
         fun from(integer: Int): MInteger {
-            return MInteger(integer.toUShort())
+            return MInteger(integer)
+        }
+
+        fun from(ushort: UShort): MInteger {
+            return MInteger(ushort.toInt())
         }
 
         fun from(integer: UInt): MInteger {
-            return MInteger(integer.toUShort())
+            return MInteger(integer.toInt())
         }
 
         fun from(b1: Byte, b2: Byte): MInteger {
-            return MInteger(UShort.from(b1, b2))
+            return MInteger.from(UShort.from(b1, b2))
         }
     }
 }

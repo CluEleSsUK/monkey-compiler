@@ -14,7 +14,27 @@ import spock.lang.Specification
 class VirtualMachineTest extends Specification {
     def compiler = new Compiler()
 
-    def "Constant allocations dereference the correct value from the constant pool"(String input, MObject expected) {
+    def "Integer arithmetic creates the expected output"(String input, MInteger expected) {
+        given:
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
+
+        expect:
+        output.result() == expected
+
+        where:
+        input              | expected
+        "1"                | MInteger.from(1)
+        "2"                | MInteger.from(2)
+        "1 + 2"            | MInteger.from(3)
+        "10 * 10 / 10 - 9" | MInteger.from(1)
+        "10 - 9 * 10 / 10" | MInteger.from(1)
+        "-5"               | MInteger.from(-5)
+        "-5 + 5"           | MInteger.from(0)
+        "-5 * -5"          | MInteger.from(25)
+    }
+
+    def "Boolean logic creates the expected output"(String input, MBoolean expected) {
         given:
         def bytecode = successfullyCompiled(input)
         def output = new VirtualMachine(bytecode).run()
@@ -24,11 +44,6 @@ class VirtualMachineTest extends Specification {
 
         where:
         input                | expected
-        "1"                  | MInteger.from(1)
-        "2"                  | MInteger.from(2)
-        "1 + 2"              | MInteger.from(3)
-        "10 * 10 / 10 - 9"   | MInteger.from(1)
-        "10 - 9 * 10 / 10"   | MInteger.from(1)
         "true"               | new MBoolean(true)
         "false"              | new MBoolean(false)
         "true == true"       | new MBoolean(true)
@@ -38,6 +53,11 @@ class VirtualMachineTest extends Specification {
         "2 < 1"              | new MBoolean(false)
         "(2 > 1) == false"   | new MBoolean(false)
         "(10 + 10) / 10 > 2" | new MBoolean(false)
+        "!true"              | new MBoolean(false)
+        "!false"             | new MBoolean(true)
+        "!!true"             | new MBoolean(true)
+        "!5"                 | new MBoolean(false)
+        "!!5"                | new MBoolean(true)
     }
 
     private Bytecode successfullyCompiled(String input) {

@@ -81,7 +81,7 @@ class Compiler {
 
     private fun compileIntegerLiteral(node: IntegerLiteral): CompilationResult<Bytecode> {
         return success {
-            val pointerToConstant = constants.addConstantForIndex(MInteger(node.value.toUShort()))
+            val pointerToConstant = constants.addConstantForIndex(MInteger.from(node.value))
             emit(OpCode.CONSTANT, pointerToConstant)
         }
     }
