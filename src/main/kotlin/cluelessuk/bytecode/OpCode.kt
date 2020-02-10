@@ -11,7 +11,9 @@ enum class OpCode {
     FALSE,
     EQUAL,
     NOT_EQUAL,
-    GREATER_THAN;
+    GREATER_THAN,
+    MINUS,
+    BANG;
 
     fun byte(): Byte = this.ordinal.toByte()
 
@@ -39,5 +41,7 @@ val opcodeDefinitions = mapOf(
     OpCode.FALSE to OpCodeDefinition("OpFalse"),
     OpCode.EQUAL to OpCodeDefinition("OpEqual"),
     OpCode.NOT_EQUAL to OpCodeDefinition("OpNotEqual"),
-    OpCode.GREATER_THAN to OpCodeDefinition("OpGreaterThan")
+    OpCode.GREATER_THAN to OpCodeDefinition("OpGreaterThan"),
+    OpCode.MINUS to OpCodeDefinition("OpMinus"),
+    OpCode.BANG to OpCodeDefinition("OpBang")
 )

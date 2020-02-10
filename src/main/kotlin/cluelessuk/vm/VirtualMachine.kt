@@ -80,7 +80,6 @@ data class VirtualMachine(
     }
 }
 
-
 private fun opcodeFrom(instruction: Instruction): OpCode {
     if (instruction.isEmpty()) {
         throw RuntimeException("Instruction was empty, and thus did not have an opcode")

@@ -2,6 +2,14 @@ package cluelessuk.bytecode
 
 
 sealed class CompilationResult<T> {
+
+    fun <U> map(fn: (T) -> U): CompilationResult<U> {
+        return when (this) {
+            is Failure -> Failure(this.reasons)
+            is Success -> Success(fn(this.value))
+        }
+    }
+
     fun <U> flatMap(fn: (CompilationResult<T>) -> CompilationResult<U>): CompilationResult<U> {
         if (this is Failure) {
             return Failure(this.reasons)

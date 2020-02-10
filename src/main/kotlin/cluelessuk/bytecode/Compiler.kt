@@ -5,10 +5,12 @@ import cluelessuk.language.ExpressionStatement
 import cluelessuk.language.InfixExpression
 import cluelessuk.language.IntegerLiteral
 import cluelessuk.language.Node
+import cluelessuk.language.PrefixExpression
 import cluelessuk.language.Program
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
 import java.lang.Error
+import java.lang.RuntimeException
 
 class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
 
@@ -23,6 +25,7 @@ class Compiler {
             is Program -> compileProgram(node)
             is ExpressionStatement -> compileExpressionStatement(node)
             is InfixExpression -> compileInfixExpression(node)
+            is PrefixExpression -> compilePrefixExpression(node)
             is IntegerLiteral -> compileIntegerLiteral(node)
             is BooleanLiteral -> compileBooleanLiteral(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
@@ -64,6 +67,16 @@ class Compiler {
         }
 
         return result.flatMap { Success(bytecode()) }
+    }
+
+    private fun compilePrefixExpression(node: PrefixExpression): CompilationResult<Bytecode> {
+        return compile(node.right).then {
+            when (node.operator) {
+                "!" -> emit(OpCode.BANG)
+                "-" -> emit(OpCode.MINUS)
+                else -> Failure<Bytecode>(listOf("Prefix operator ${node.operator} not supported"))
+            }
+        }
     }
 
     private fun compileIntegerLiteral(node: IntegerLiteral): CompilationResult<Bytecode> {
