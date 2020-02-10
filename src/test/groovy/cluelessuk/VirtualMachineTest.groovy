@@ -7,7 +7,6 @@ import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
 import cluelessuk.vm.MBoolean
 import cluelessuk.vm.MInteger
-import cluelessuk.vm.MObject
 import cluelessuk.vm.VirtualMachine
 import spock.lang.Specification
 
@@ -64,6 +63,6 @@ class VirtualMachineTest extends Specification {
         def program = new Parser(new Lexer(input)).parseProgram()
         def compiled = compiler.compile(program)
         assert (compiled instanceof Success)
-        return compiler.bytecode()
+        return (Bytecode) compiled.value
     }
 }

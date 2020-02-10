@@ -9,8 +9,6 @@ import cluelessuk.language.PrefixExpression
 import cluelessuk.language.Program
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
-import java.lang.Error
-import java.lang.RuntimeException
 
 class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
 
@@ -36,7 +34,7 @@ class Compiler {
         return node.statements
             .map(::compile)
             .firstOrNull { it is Failure }
-            ?: Success(bytecode())
+            ?: success()
     }
 
     private fun compileExpressionStatement(node: ExpressionStatement): CompilationResult<Bytecode> {
@@ -66,7 +64,7 @@ class Compiler {
             }
         }
 
-        return result.flatMap { Success(bytecode()) }
+        return result.flatMap { success() }
     }
 
     private fun compilePrefixExpression(node: PrefixExpression): CompilationResult<Bytecode> {
@@ -80,16 +78,14 @@ class Compiler {
     }
 
     private fun compileIntegerLiteral(node: IntegerLiteral): CompilationResult<Bytecode> {
-        return success {
-            val pointerToConstant = constants.addConstantForIndex(MInteger.from(node.value))
-            emit(OpCode.CONSTANT, pointerToConstant)
-        }
+        val pointerToConstant = constants.addConstantForIndex(MInteger.from(node.value))
+        emit(OpCode.CONSTANT, pointerToConstant)
+        return success()
     }
 
     private fun compileBooleanLiteral(node: BooleanLiteral): CompilationResult<Bytecode> {
-        return success {
-            if (node.value) emit(OpCode.TRUE) else emit(OpCode.FALSE)
-        }
+        if (node.value) emit(OpCode.TRUE) else emit(OpCode.FALSE)
+        return success()
     }
 
     private fun emit(opcode: OpCode, vararg operands: UShort): UShort {
@@ -97,13 +93,8 @@ class Compiler {
         return output.addInstructionForIndex(instruction)
     }
 
-    private fun bytecode(): Bytecode {
-        return Bytecode(output.get(), constants.get())
-    }
-
-    private fun success(fn: () -> Unit): Success<Bytecode> {
-        fn()
-        return Success(bytecode())
+    private fun success(): Success<Bytecode> {
+        return Success(Bytecode(output.get(), constants.get()))
     }
 }
 
