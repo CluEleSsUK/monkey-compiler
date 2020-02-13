@@ -39,6 +39,10 @@ class TestUtils {
         return encoder.make(opcode)
     }
 
+    static make(OpCode opcode, Integer... operands) {
+        return encoder.make(opcode, ushortListOf(operands))
+    }
+
     static boolean deepEqual(byte[][] arr1, byte[][] arr2) {
         if (arr1.length != arr2.length) {
             return false

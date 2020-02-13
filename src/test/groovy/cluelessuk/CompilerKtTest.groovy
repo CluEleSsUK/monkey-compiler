@@ -1,5 +1,6 @@
 package cluelessuk
 
+
 import cluelessuk.bytecode.OpCode
 import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
@@ -12,6 +13,7 @@ import static cluelessuk.TestUtils.*
 
 
 import spock.lang.Specification
+
 
 class CompilerKtTest extends Specification {
 
@@ -44,6 +46,33 @@ class CompilerKtTest extends Specification {
         "!true"          | []                                                     | [bytecode(OpCode.TRUE), bytecode(OpCode.BANG), bytecode(OpCode.POP)]
         "!true == false" | []                                                     | [bytecode(OpCode.TRUE), bytecode(OpCode.BANG), bytecode(OpCode.FALSE), bytecode(OpCode.EQUAL), bytecode(OpCode.POP)]
         "-5 > 10"        | [MInteger.from(5), MInteger.from(10)]                  | [bytecodeConstant(0), bytecode(OpCode.MINUS), bytecodeConstant(1), bytecode(OpCode.GREATER_THAN), bytecode(OpCode.POP)]
+    }
+
+    def "Test conditionals output jump logic"() {
+        given:
+        def input = "if (true) { 10 }; 3333;"
+        def program = new Parser(new Lexer(input)).parseProgram()
+
+        def expected = [
+                // 0000
+                bytecode(OpCode.TRUE),
+                // 0001
+                make(OpCode.JUMP_IF_NOT_TRUE, 0007),
+                // 0004
+                bytecodeConstant(0),
+                // 0007
+                bytecode(OpCode.POP),
+                // 0008
+                bytecodeConstant(1),
+                // 0011
+                bytecode(OpCode.POP),
+        ] as byte[][]
+
+        when:
+        def result = compiler.compile(program)
+
+        then:
+        ByteUtils.assertExpected(expected, result)
     }
 
 }

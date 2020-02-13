@@ -26,11 +26,3 @@ fun ByteBuffer.toUShortArray(): UShortArray {
     return array
 }
 
-fun ByteArray.uShortFrom(index: Int): UShort {
-    if (index > this.size - 2) {
-        return 0.toUShort()
-    }
-
-    return UShort.from(this[index], this[index + 1])
-}
-

@@ -1,7 +1,9 @@
 package cluelessuk.bytecode
 
+import cluelessuk.language.BlockStatement
 import cluelessuk.language.BooleanLiteral
 import cluelessuk.language.ExpressionStatement
+import cluelessuk.language.IfExpression
 import cluelessuk.language.InfixExpression
 import cluelessuk.language.IntegerLiteral
 import cluelessuk.language.Node
@@ -20,30 +22,38 @@ class Compiler {
 
     fun compile(node: Node): CompilationResult<Bytecode> {
         return when (node) {
-            is Program -> compileProgram(node)
+            is Program -> compile(node.statements)
             is ExpressionStatement -> compileExpressionStatement(node)
             is InfixExpression -> compileInfixExpression(node)
             is PrefixExpression -> compilePrefixExpression(node)
+            is IfExpression -> compileIfExpression(node)
+            is BlockStatement -> compile(node.statements)
             is IntegerLiteral -> compileIntegerLiteral(node)
             is BooleanLiteral -> compileBooleanLiteral(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
         }
     }
 
-    private fun compileProgram(node: Program): CompilationResult<Bytecode> {
-        return node.statements
-            .map(::compile)
-            .firstOrNull { it is Failure }
-            ?: success()
+    private fun compile(nodes: List<Node>): CompilationResult<Bytecode> = compile(*nodes.toTypedArray())
+
+    // not using `flatMap` makes tailrec possible here
+    private tailrec fun compile(vararg nodes: Node): CompilationResult<Bytecode> {
+        if (nodes.isEmpty()) {
+            return success()
+        }
+
+        val result = compile(nodes.first())
+        if (result is Failure) {
+            return result
+        }
+
+        val theRest = nodes.drop(1).toTypedArray()
+        return compile(*theRest)
     }
 
     private fun compileExpressionStatement(node: ExpressionStatement): CompilationResult<Bytecode> {
         return compile(node.expression)
             .then { emit(OpCode.POP) }
-    }
-
-    private fun compile(left: Node, right: Node): CompilationResult<Bytecode> {
-        return compile(left).flatMap { compile(right) }
     }
 
     private fun compileInfixExpression(node: InfixExpression): CompilationResult<Bytecode> {
@@ -74,6 +84,20 @@ class Compiler {
                 "-" -> emit(OpCode.MINUS)
                 else -> Failure<Bytecode>(listOf("Prefix operator ${node.operator} not supported"))
             }
+        }
+    }
+
+    private fun compileIfExpression(node: IfExpression): CompilationResult<Bytecode> {
+        return compile(node.condition)
+            // 9999 BOGUS VALUE FOR NOW
+            .then { emit(OpCode.JUMP_IF_NOT_TRUE, 9999.toUShort()) }
+            .then(::removeLastIfPop)
+            .flatMap { compile(node.consequence) }
+    }
+
+    private fun removeLastIfPop() {
+        if (output.get().last().contentEquals(byteEncoder.make(OpCode.POP))) {
+            output.pop()
         }
     }
 
@@ -112,11 +136,26 @@ class ConstantPool {
 
 class CompiledInstructions {
     private val instructions = mutableListOf<ByteArray>()
+    // 0 . . . . n
+    private var lastInstruction: ByteArray? = null
+    // 0 . . . m, n
+    private var secondLastInstruction: ByteArray? = null
 
     fun addInstructionForIndex(instruction: ByteArray): UShort {
         instructions += instruction
+        lastInstruction = instructions.lastOrNull()
+        secondLastInstruction = instructions.drop(1).lastOrNull()
         return instructions.lastIndex.toUShort()
     }
 
     fun get(): Array<ByteArray> = instructions.toTypedArray()
+
+    fun pop(): ByteArray? {
+        if (instructions.isEmpty()) {
+            return null
+        }
+
+        lastInstruction = secondLastInstruction
+        return instructions.removeAt(instructions.lastIndex)
+    }
 }

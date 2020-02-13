@@ -25,6 +25,11 @@ sealed class CompilationResult<T> {
         block()
         return this
     }
+
+    fun orElse(block: () -> T): T = when (this) {
+        is Failure -> block()
+        is Success -> this.value
+    }
 }
 
 data class Success<T>(val value: T) : CompilationResult<T>()
