@@ -12,18 +12,16 @@ import java.lang.RuntimeException
 class ByteUtils {
     companion object {
         @JvmStatic
-        fun assertExpected(expected: Array<ByteArray>, result: CompilationResult<Bytecode>): Boolean {
-            return when (result) {
-                is Failure -> throw RuntimeException("Compilation failed:\n${result.reasons.joinToString("\n")}")
-                is Success -> {
-                    val actual = result.value.instructions
-                    if (!expected.contentEquals(actual)) {
-                        val message = bytecodeAssertionFailedMessage(expected, actual)
-                        println(message)
-                        throw RuntimeException(message)
-                    }
-                    return true
+        fun assertExpected(expected: Array<ByteArray>, result: CompilationResult<Bytecode>): Boolean = when (result) {
+            is Failure -> throw RuntimeException("Compilation failed:\n${result.reasons.joinToString("\n")}")
+            is Success -> {
+                val actual = result.value.instructions
+                if (!expected.contentDeepEquals(actual)) {
+                    val message = bytecodeAssertionFailedMessage(expected, actual)
+                    println(message)
+                    throw RuntimeException(message)
                 }
+                true
             }
         }
 

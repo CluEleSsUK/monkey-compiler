@@ -88,11 +88,18 @@ class Compiler {
     }
 
     private fun compileIfExpression(node: IfExpression): CompilationResult<Bytecode> {
-        return compile(node.condition)
-            // 9999 BOGUS VALUE FOR NOW
-            .then { emit(OpCode.JUMP_IF_NOT_TRUE, 9999.toUShort()) }
-            .then(::removeLastIfPop)
-            .flatMap { compile(node.consequence) }
+        return compile(node.condition).then {
+            // 9999 is bogus result that will be rewritten
+            val jumpPosition = emit(OpCode.JUMP_IF_NOT_TRUE, 9999.toUShort())
+
+            compile(node.consequence)
+                .then(::removeLastIfPop)
+                .then {
+                    // rewrite the 9999 to the real address
+                    val instructionAfterConsequence = output.get().map { it.size }.sum().toUShort()
+                    output.replaceOperand(jumpPosition, instructionAfterConsequence)
+                }
+        }
     }
 
     private fun removeLastIfPop() {
@@ -141,6 +148,15 @@ class CompiledInstructions {
     // 0 . . . m, n
     private var secondLastInstruction: ByteArray? = null
 
+    fun pop(): ByteArray? {
+        if (instructions.isEmpty()) {
+            return null
+        }
+
+        lastInstruction = secondLastInstruction
+        return instructions.removeAt(instructions.lastIndex)
+    }
+
     fun addInstructionForIndex(instruction: ByteArray): UShort {
         instructions += instruction
         lastInstruction = instructions.lastOrNull()
@@ -150,12 +166,23 @@ class CompiledInstructions {
 
     fun get(): Array<ByteArray> = instructions.toTypedArray()
 
-    fun pop(): ByteArray? {
-        if (instructions.isEmpty()) {
-            return null
+
+    private val byteEncoder = ByteEncoder()
+    fun replaceOperand(position: UShort, operand: UShort) {
+        if (position.toInt() >= instructions.size) {
+            return
         }
 
-        lastInstruction = secondLastInstruction
-        return instructions.removeAt(instructions.lastIndex)
+        val opcode = OpCode.from(instructions[position.toInt()][0])
+        val updatedInstruction = byteEncoder.make(opcode, operand)
+        replaceInstruction(position, updatedInstruction)
+    }
+
+    private fun replaceInstruction(position: UShort, updatedInstruction: ByteArray) {
+        if (position.toInt() >= instructions.size) {
+            return
+        }
+
+        instructions[position.toInt()] = updatedInstruction
     }
 }
