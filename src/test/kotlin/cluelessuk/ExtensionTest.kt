@@ -2,7 +2,7 @@ package cluelessuk
 
 import cluelessuk.bytecode.putUShort
 import cluelessuk.bytecode.readUShort
-import cluelessuk.bytecode.toUShortArray
+import cluelessuk.bytecode.toAddressArray
 import java.nio.ByteBuffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,6 +28,6 @@ class ExtensionTest {
             .putUShort(input)
         val expected = ushortArrayOf(input)
 
-        assertTrue(expected.contentEquals(buffer.toUShortArray()))
+        assertTrue(expected.contentEquals(buffer.toAddressArray()))
     }
 }

@@ -15,9 +15,9 @@ fun UShort.Companion.from(one: Byte, two: Byte): UShort {
     return ((one.toInt() shl 8) or two.toInt()).toUShort()
 }
 
-fun ByteBuffer.toUShortArray(): UShortArray {
+fun ByteBuffer.toAddressArray(): MemoryAddressArray {
     this.rewind()
-    val array = UShortArray(this.limit() / 2) { 0.toUShort() }
+    val array = UShortArray(this.limit() / 2) { 0.toMemoryAddress() }
     var index = 0
     while (this.hasRemaining()) {
         array[index] = this.readUShort()

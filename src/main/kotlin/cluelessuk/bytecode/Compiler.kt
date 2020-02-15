@@ -90,13 +90,13 @@ class Compiler {
     private fun compileIfExpression(node: IfExpression): CompilationResult<Bytecode> {
         return compile(node.condition).then {
             // 9999 is bogus result that will be rewritten
-            val jumpPosition = emit(OpCode.JUMP_IF_NOT_TRUE, 9999.toUShort())
+            val jumpPosition = emit(OpCode.JUMP_IF_NOT_TRUE, 9999.toMemoryAddress())
 
             compile(node.consequence)
                 .then(::removeLastIfPop)
                 .then {
                     // rewrite the 9999 to the real address
-                    val instructionAfterConsequence = output.get().map { it.size }.sum().toUShort()
+                    val instructionAfterConsequence = output.get().map { it.size }.sum().toMemoryAddress()
                     output.replaceOperand(jumpPosition, instructionAfterConsequence)
                 }
         }
@@ -119,7 +119,7 @@ class Compiler {
         return success()
     }
 
-    private fun emit(opcode: OpCode, vararg operands: UShort): UShort {
+    private fun emit(opcode: OpCode, vararg operands: MemoryAddress): MemoryAddress {
         val instruction = byteEncoder.make(opcode, operands.toList())
         return output.addInstructionForIndex(instruction)
     }
@@ -133,9 +133,9 @@ class ConstantPool {
     private val objects = mutableListOf<MObject>()
 
     // returns last index of constant pool as an ID for the item added
-    fun addConstantForIndex(obj: MObject): UShort {
+    fun addConstantForIndex(obj: MObject): MemoryAddress {
         objects += obj
-        return objects.lastIndex.toUShort()
+        return objects.lastIndex.toMemoryAddress()
     }
 
     fun get(): Array<MObject> = objects.toTypedArray()
@@ -157,19 +157,19 @@ class CompiledInstructions {
         return instructions.removeAt(instructions.lastIndex)
     }
 
-    fun addInstructionForIndex(instruction: ByteArray): UShort {
+    fun addInstructionForIndex(instruction: ByteArray): MemoryAddress {
         instructions += instruction
         lastInstruction = instructions.lastOrNull()
         secondLastInstruction = instructions.drop(1).lastOrNull()
-        return instructions.lastIndex.toUShort()
+        return instructions.lastIndex.toMemoryAddress()
     }
 
     fun get(): Array<ByteArray> = instructions.toTypedArray()
 
 
     private val byteEncoder = ByteEncoder()
-    fun replaceOperand(position: UShort, operand: UShort) {
-        if (position.toInt() >= instructions.size) {
+    fun replaceOperand(position: MemoryAddress, operand: MemoryAddress) {
+        if (position >= instructions.size.toMemoryAddress()) {
             return
         }
 
@@ -178,8 +178,8 @@ class CompiledInstructions {
         replaceInstruction(position, updatedInstruction)
     }
 
-    private fun replaceInstruction(position: UShort, updatedInstruction: ByteArray) {
-        if (position.toInt() >= instructions.size) {
+    private fun replaceInstruction(position: MemoryAddress, updatedInstruction: ByteArray) {
+        if (position >= instructions.size.toMemoryAddress()) {
             return
         }
 
