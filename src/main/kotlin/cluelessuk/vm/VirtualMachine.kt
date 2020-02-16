@@ -133,6 +133,11 @@ data class VirtualMachine(
         if (obj is MBoolean) {
             return obj.value
         }
+
+        if (obj is MInteger) {
+            return obj.value > 0
+        }
+
         return true
     }
 }
