@@ -34,13 +34,7 @@ data class VirtualMachine(
                 OpCode.TRUE -> stack.push(MBoolean.TRUE)
                 OpCode.FALSE -> stack.push(MBoolean.FALSE)
                 OpCode.JUMP -> runJumpOperation()
-                OpCode.JUMP_IF_NOT_TRUE -> {
-                    if (!isTruthy(stack.pop())) {
-                        runJumpOperation()
-                    } else {
-                        instructionPointer += operandsWidth(OpCode.JUMP_IF_NOT_TRUE)
-                    }
-                }
+                OpCode.JUMP_IF_NOT_TRUE -> runJumpIfNotTrue()
             }
             instructionPointer++
         }
@@ -48,12 +42,6 @@ data class VirtualMachine(
         return this
     }
 
-    private fun runJumpOperation() {
-        val jumpInstruction = instructionPointerOnwards()
-        val jumpAddress = memoryAddressOperandOf(jumpInstruction).toInt()
-        // minus 1 because we increment it for the opcode after every instruction
-        instructionPointer = jumpAddress - 1
-    }
 
     private fun instructionPointerOnwards(): ByteArray {
         return bytecode.instructions.sliceArray(instructionPointer until bytecode.instructions.size)
@@ -125,20 +113,19 @@ data class VirtualMachine(
         stack.push(MInteger.from(0 - top.value))
     }
 
-    private fun isTruthy(obj: MObject?): Boolean {
-        if (obj == null) {
-            return false
-        }
+    private fun runJumpOperation() {
+        val jumpInstruction = instructionPointerOnwards()
+        val jumpAddress = memoryAddressOperandOf(jumpInstruction).toInt()
+        // minus 1 because we increment it for the opcode after every instruction
+        instructionPointer = jumpAddress - 1
+    }
 
-        if (obj is MBoolean) {
-            return obj.value
+    private fun runJumpIfNotTrue() {
+        if (!isTruthy(stack.pop())) {
+            runJumpOperation()
+        } else {
+            instructionPointer += operandsWidth(OpCode.JUMP_IF_NOT_TRUE)
         }
-
-        if (obj is MInteger) {
-            return obj.value > 0
-        }
-
-        return true
     }
 }
 
@@ -150,13 +137,17 @@ private fun opcodeFrom(instruction: Instruction): OpCode {
     return OpCode.from(instruction[0])
 }
 
-private fun operandsWidth(opcode: OpCode): Int {
-    return opcodeDefinitions[opcode]?.operandWidthBytes?.sum() ?: 0
-}
+private fun operandsWidth(opcode: OpCode): Int = opcodeDefinitions[opcode]?.operandWidthBytes?.sum() ?: 0
 
 private fun memoryAddressOperandOf(instruction: Instruction): MemoryAddress {
     if (instruction.size < 3) {
         throw RuntimeException("Instruction expected a 3 byte instruction, but got ${instruction.size}")
     }
     return UShort.from(instruction[1], instruction[2])
+}
+
+private fun isTruthy(obj: MObject?): Boolean = when (obj) {
+    null -> false
+    is MBoolean -> obj.value
+    is MInteger -> obj.value > 0
 }
