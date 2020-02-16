@@ -7,21 +7,25 @@ import cluelessuk.bytecode.CompilationResult
 import cluelessuk.bytecode.Failure
 import cluelessuk.bytecode.OpCode
 import cluelessuk.bytecode.Success
+import cluelessuk.bytecode.flatten
 import cluelessuk.vm.MObject
 import java.lang.RuntimeException
 
 class ByteUtils {
     companion object {
         @JvmStatic
-        fun assertExpected(expected: Array<ByteArray>, result: CompilationResult<Bytecode>): Boolean = when (result) {
+        fun assertExpected(expected: List<ByteArray>, result: CompilationResult<Bytecode>): Boolean = when (result) {
             is Failure -> throw RuntimeException("Compilation failed:\n${result.reasons.joinToString("\n")}")
             is Success -> {
+                val flatExpected = flatten(expected)
                 val actual = result.value.instructions
-                if (!expected.contentDeepEquals(actual)) {
-                    val message = bytecodeAssertionFailedMessage(expected, actual)
+
+                if (!flatExpected.contentEquals(actual)) {
+                    val message = bytecodeAssertionFailedMessage(flatExpected, actual)
                     println(message)
                     throw RuntimeException(message)
                 }
+
                 true
             }
         }
@@ -44,11 +48,6 @@ class ByteUtils {
             }
         }
     }
-}
-
-fun prettyPrinter(instruction: Array<ByteArray>): String {
-    val flattenedArray = instruction.foldRight(ByteArray(0)) { acc, next -> acc.plus(next) }
-    return prettyPrinter(flattenedArray)
 }
 
 fun prettyPrinter(instructions: ByteArray): String {
@@ -85,7 +84,7 @@ fun nextInstructionAsString(instruction: ByteArray): Pair<String, BytesRead> {
     return output to bytesRead
 }
 
-fun bytecodeAssertionFailedMessage(expected: Array<ByteArray>, actual: Array<ByteArray>): String {
+fun bytecodeAssertionFailedMessage(expected: ByteArray, actual: ByteArray): String {
     return "Bytecode assertion failed:\n" +
         "EXPECTED:\n" +
         prettyPrinter(expected) + "\n" +

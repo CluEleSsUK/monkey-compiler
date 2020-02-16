@@ -12,7 +12,7 @@ import cluelessuk.language.Program
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
 
-class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
+class Bytecode(val instructions: ByteArray, val constants: Array<MObject>)
 
 // this will be used any time we rely on an address that is not yet known, and will be rewritten
 val placeholderAddress = 9999.toMemoryAddress()
@@ -63,6 +63,7 @@ class Compiler {
         val result = when (node.operator) {
             "<" -> compile(node.right, node.left)
                 .then { emit(OpCode.GREATER_THAN) }
+
             else -> compile(node.left, node.right).then {
                 when (node.operator) {
                     "+" -> emit(OpCode.ADD)
@@ -98,19 +99,23 @@ class Compiler {
             compile(node.consequence)
                 .then(::removeLastIfPop)
                 // rewrite the 9999 to the next instruction
-                .then { output.replaceOperand(jumpPosition, output.nextAvailableMemoryAddress()) }
+                .then {
+                    if (node.alternative == null) {
+                        output.replaceOperand(jumpPosition, output.nextAvailableMemoryAddress())
+                    } else {
+                        val endOfConsequence = emit(OpCode.JUMP, placeholderAddress)
+                        output.replaceOperand(jumpPosition, output.nextAvailableMemoryAddress())
 
-            if (node.alternative != null) {
-                val endOfConsequence = emit(OpCode.JUMP, placeholderAddress)
-                compile(node.alternative)
-                    .then(::removeLastIfPop)
-                    .then { output.replaceOperand(endOfConsequence, output.nextAvailableMemoryAddress()) }
-            }
+                        compile(node.alternative)
+                            .then(::removeLastIfPop)
+                            .then { output.replaceOperand(endOfConsequence, output.nextAvailableMemoryAddress()) }
+                    }
+                }
         }
     }
 
     private fun removeLastIfPop() {
-        if (output.get().last().contentEquals(byteEncoder.make(OpCode.POP))) {
+        if (output.get().last() == OpCode.POP.byte()) {
             output.pop()
         }
     }
@@ -171,12 +176,9 @@ class CompiledInstructions {
         return instructions.lastIndex.toMemoryAddress()
     }
 
-    fun get(): Array<ByteArray> = instructions.toTypedArray()
+    fun get(): ByteArray = flatten(instructions)
 
-    fun nextAvailableMemoryAddress(): MemoryAddress = get()
-        .map { it.size }
-        .sum()
-        .toMemoryAddress()
+    fun nextAvailableMemoryAddress(): MemoryAddress = get().size.toMemoryAddress()
 
     private val byteEncoder = ByteEncoder()
     fun replaceOperand(position: MemoryAddress, operand: MemoryAddress) {

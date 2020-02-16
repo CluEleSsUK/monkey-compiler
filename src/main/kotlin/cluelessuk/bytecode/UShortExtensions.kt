@@ -26,3 +26,9 @@ fun ByteBuffer.toAddressArray(): MemoryAddressArray {
     return array
 }
 
+fun flatten(nested: List<ByteArray>): ByteArray {
+    return nested.flatMap {
+        arrayListOf(*it.toTypedArray())
+    }.toByteArray()
+}
+

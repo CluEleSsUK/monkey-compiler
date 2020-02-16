@@ -19,7 +19,7 @@ class CompilerKtTest extends Specification {
 
     def compiler = new Compiler()
 
-    def "Compiler emits the expected code with references to the constant pool"(String input, MObject[] constants, byte[][] expected) {
+    def "Compiler emits the expected code with references to the constant pool"(String input, MObject[] constants, List<byte[]> expected) {
         given:
         def program = new Parser(new Lexer(input)).parseProgram()
         def result = compiler.compile(program)
@@ -58,7 +58,7 @@ class CompilerKtTest extends Specification {
                 // 0000
                 bytecode(OpCode.TRUE),
                 // 0001
-                make(OpCode.JUMP_IF_NOT_TRUE, 0007),
+                make(OpCode.JUMP_IF_NOT_TRUE, 10),
                 // 0004
                 bytecodeConstant(0),
                 // 0007
@@ -71,7 +71,7 @@ class CompilerKtTest extends Specification {
                 bytecodeConstant(2),
                 // 0017
                 bytecode(OpCode.POP),
-        ] as byte[][]
+        ]
 
         when:
         def result = compiler.compile(program)

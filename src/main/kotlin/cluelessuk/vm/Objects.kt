@@ -23,7 +23,7 @@ data class MInteger(val value: Int) : MObject("INTEGER") {
     }
 
     operator fun compareTo(other: MInteger): Int {
-        return (this.value - other.value).toInt()
+        return this.value - other.value
     }
 
     companion object {
@@ -36,12 +36,8 @@ data class MInteger(val value: Int) : MObject("INTEGER") {
             return MInteger(ushort.toInt())
         }
 
-        fun from(integer: UInt): MInteger {
-            return MInteger(integer.toInt())
-        }
-
         fun from(b1: Byte, b2: Byte): MInteger {
-            return MInteger.from(UShort.from(b1, b2))
+            return from(UShort.from(b1, b2))
         }
     }
 }

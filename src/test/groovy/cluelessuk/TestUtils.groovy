@@ -43,13 +43,14 @@ class TestUtils {
         return encoder.make(opcode, ushortListOf(operands))
     }
 
-    static boolean deepEqual(byte[][] arr1, byte[][] arr2) {
-        if (arr1.length != arr2.length) {
+    static boolean deepEqual(byte[] arr1, List<byte[]> arr2) {
+        def flattened = arr2.flatten().toArray()
+        if (arr1.length != flattened.length) {
             return false
         }
 
         for (int i = 0; i < arr1.length; i++) {
-            if (arr1[i] != arr2[i]) {
+            if (arr1[i] != flattened[i]) {
                 return false
             }
         }

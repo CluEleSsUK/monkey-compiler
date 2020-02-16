@@ -2,8 +2,10 @@ package cluelessuk.vm
 
 import cluelessuk.bytecode.Bytecode
 import cluelessuk.bytecode.Instruction
+import cluelessuk.bytecode.MemoryAddress
 import cluelessuk.bytecode.OpCode
-import java.lang.RuntimeException
+import cluelessuk.bytecode.from
+import cluelessuk.bytecode.opcodeDefinitions
 
 data class VirtualMachine(
     private val bytecode: Bytecode
@@ -11,10 +13,14 @@ data class VirtualMachine(
     private val stack = CallStack<MObject>()
     fun result(): MObject? = stack.lastPoppedValue
 
+    var instructionPointer = 0
+
     fun run(): VirtualMachine {
-        bytecode.instructions.forEach {
-            when (val opcode = opcodeFrom(it)) {
-                OpCode.CONSTANT -> runConstant(it)
+        while (bytecode.instructions.size > instructionPointer) {
+            val currentInstruction = instructionPointerOnwards()
+
+            when (val opcode = opcodeFrom(currentInstruction)) {
+                OpCode.CONSTANT -> runConstant(currentInstruction)
                 OpCode.ADD,
                 OpCode.SUBTRACT,
                 OpCode.MULTIPLY,
@@ -27,15 +33,36 @@ data class VirtualMachine(
                 OpCode.POP -> stack.pop()
                 OpCode.TRUE -> stack.push(MBoolean.TRUE)
                 OpCode.FALSE -> stack.push(MBoolean.FALSE)
+                OpCode.JUMP -> runJumpOperation()
+                OpCode.JUMP_IF_NOT_TRUE -> {
+                    if (!isTruthy(stack.pop())) {
+                        runJumpOperation()
+                    } else {
+                        instructionPointer += operandsWidth(OpCode.JUMP_IF_NOT_TRUE)
+                    }
+                }
             }
+            instructionPointer++
         }
 
         return this
     }
 
+    private fun runJumpOperation() {
+        val jumpInstruction = instructionPointerOnwards()
+        val jumpAddress = memoryAddressOperandOf(jumpInstruction).toInt()
+        // minus 1 because we increment it for the opcode after every instruction
+        instructionPointer = jumpAddress - 1
+    }
+
+    private fun instructionPointerOnwards(): ByteArray {
+        return bytecode.instructions.sliceArray(instructionPointer until bytecode.instructions.size)
+    }
+
     private fun runConstant(instruction: Instruction) {
-        val pointer = constantPoolMemoryAddress(instruction)
+        val pointer = memoryAddressOperandOf(instruction)
         stack.push(dereference(pointer))
+        instructionPointer += operandsWidth(OpCode.CONSTANT)
     }
 
     private fun runBinaryOperation(opcode: OpCode) {
@@ -73,12 +100,12 @@ data class VirtualMachine(
         }
     }
 
-    private fun dereference(pointer: MInteger): MObject? {
-        if (bytecode.constants.size < pointer.value.toInt()) {
+    private fun dereference(pointer: MemoryAddress): MObject? {
+        if (bytecode.constants.size <= pointer.toInt()) {
             return null
         }
 
-        return bytecode.constants[pointer.value.toInt()]
+        return bytecode.constants[pointer.toInt()]
     }
 
     private fun runBangOperation() {
@@ -97,6 +124,17 @@ data class VirtualMachine(
 
         stack.push(MInteger.from(0 - top.value))
     }
+
+    private fun isTruthy(obj: MObject?): Boolean {
+        if (obj == null) {
+            return false
+        }
+
+        if (obj is MBoolean) {
+            return obj.value
+        }
+        return true
+    }
 }
 
 private fun opcodeFrom(instruction: Instruction): OpCode {
@@ -107,9 +145,13 @@ private fun opcodeFrom(instruction: Instruction): OpCode {
     return OpCode.from(instruction[0])
 }
 
-private fun constantPoolMemoryAddress(instruction: Instruction): MInteger {
-    if (instruction.size != 3) {
+private fun operandsWidth(opcode: OpCode): Int {
+    return opcodeDefinitions[opcode]?.operandWidthBytes?.sum() ?: 0
+}
+
+private fun memoryAddressOperandOf(instruction: Instruction): MemoryAddress {
+    if (instruction.size < 3) {
         throw RuntimeException("Instruction expected a 3 byte instruction, but got ${instruction.size}")
     }
-    return MInteger.from(instruction[1], instruction[2])
+    return UShort.from(instruction[1], instruction[2])
 }

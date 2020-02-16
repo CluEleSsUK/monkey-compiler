@@ -7,6 +7,7 @@ import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
 import cluelessuk.vm.MBoolean
 import cluelessuk.vm.MInteger
+import cluelessuk.vm.MObject
 import cluelessuk.vm.VirtualMachine
 import spock.lang.Specification
 
@@ -57,6 +58,25 @@ class VirtualMachineTest extends Specification {
         "!!true"             | new MBoolean(true)
         "!5"                 | new MBoolean(false)
         "!!5"                | new MBoolean(true)
+    }
+
+    def "Conditionals evaluate to the correct output"(String input, MObject expected) {
+        given:
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
+
+        expect:
+        output.result() == expected
+
+        where:
+        input                                  | expected
+        "if (true) { 10; }"                    | MInteger.from(10)
+        "if (true) { 10; } else { 20; }"       | MInteger.from(10)
+        "if (false) { 10; } else { 20; }"      | MInteger.from(20)
+        "if (1) { 10; }"                       | MInteger.from(10)
+        "if (1 < 2) { 10; }"                   | MInteger.from(10)
+        "if (1 < 2) { 10; } else { 20 + 10; }" | MInteger.from(10)
+        "if (1 > 2) { 10; } else { 20 + 10; }" | MInteger.from(30)
     }
 
     private Bytecode successfullyCompiled(String input) {
