@@ -50,9 +50,10 @@ class CompilerKtTest extends Specification {
 
     def "Test conditionals output jump logic"() {
         given:
-        def input = "if (true) { 10 }; 3333;"
+        def input = "if (true) { 10 } else { 20 }; 3333;"
         def program = new Parser(new Lexer(input)).parseProgram()
 
+        def expectedConstants = [MInteger.from(10), MInteger.from(20), MInteger.from(3333)]
         def expected = [
                 // 0000
                 bytecode(OpCode.TRUE),
@@ -61,10 +62,14 @@ class CompilerKtTest extends Specification {
                 // 0004
                 bytecodeConstant(0),
                 // 0007
-                bytecode(OpCode.POP),
-                // 0008
+                make(OpCode.JUMP, 13),
+                // 0010
                 bytecodeConstant(1),
-                // 0011
+                // 0013
+                bytecode(OpCode.POP),
+                // 0014
+                bytecodeConstant(2),
+                // 0017
                 bytecode(OpCode.POP),
         ] as byte[][]
 
@@ -73,6 +78,7 @@ class CompilerKtTest extends Specification {
 
         then:
         ByteUtils.assertExpected(expected, result)
+        ByteUtils.assertExpectedConstants(expectedConstants, result)
     }
 
 }

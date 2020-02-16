@@ -14,6 +14,9 @@ import cluelessuk.vm.MObject
 
 class Bytecode(val instructions: Array<ByteArray>, val constants: Array<MObject>)
 
+// this will be used any time we rely on an address that is not yet known, and will be rewritten
+val placeholderAddress = 9999.toMemoryAddress()
+
 class Compiler {
 
     private val byteEncoder = ByteEncoder()
@@ -89,16 +92,20 @@ class Compiler {
 
     private fun compileIfExpression(node: IfExpression): CompilationResult<Bytecode> {
         return compile(node.condition).then {
-            // 9999 is bogus result that will be rewritten
-            val jumpPosition = emit(OpCode.JUMP_IF_NOT_TRUE, 9999.toMemoryAddress())
+            // 9999 is a placeholder location that will be rewritten
+            val jumpPosition = emit(OpCode.JUMP_IF_NOT_TRUE, placeholderAddress)
 
             compile(node.consequence)
                 .then(::removeLastIfPop)
-                .then {
-                    // rewrite the 9999 to the real address
-                    val instructionAfterConsequence = output.get().map { it.size }.sum().toMemoryAddress()
-                    output.replaceOperand(jumpPosition, instructionAfterConsequence)
-                }
+                // rewrite the 9999 to the next instruction
+                .then { output.replaceOperand(jumpPosition, output.nextAvailableMemoryAddress()) }
+
+            if (node.alternative != null) {
+                val endOfConsequence = emit(OpCode.JUMP, placeholderAddress)
+                compile(node.alternative)
+                    .then(::removeLastIfPop)
+                    .then { output.replaceOperand(endOfConsequence, output.nextAvailableMemoryAddress()) }
+            }
         }
     }
 
@@ -166,6 +173,10 @@ class CompiledInstructions {
 
     fun get(): Array<ByteArray> = instructions.toTypedArray()
 
+    fun nextAvailableMemoryAddress(): MemoryAddress = get()
+        .map { it.size }
+        .sum()
+        .toMemoryAddress()
 
     private val byteEncoder = ByteEncoder()
     fun replaceOperand(position: MemoryAddress, operand: MemoryAddress) {

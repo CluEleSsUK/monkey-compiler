@@ -7,6 +7,7 @@ import cluelessuk.bytecode.CompilationResult
 import cluelessuk.bytecode.Failure
 import cluelessuk.bytecode.OpCode
 import cluelessuk.bytecode.Success
+import cluelessuk.vm.MObject
 import java.lang.RuntimeException
 
 class ByteUtils {
@@ -25,12 +26,22 @@ class ByteUtils {
             }
         }
 
-        private fun bytecodeAssertionFailedMessage(expected: Array<ByteArray>, actual: Array<ByteArray>): String {
-            return "Bytecode assertion failed:\n" +
-                "EXPECTED:\n" +
-                prettyPrinter(expected) + "\n" +
-                "RECEIVED:\n" +
-                prettyPrinter(actual)
+        @JvmStatic
+        fun assertExpectedConstants(expected: List<MObject>, result: CompilationResult<Bytecode>): Boolean = when (result) {
+            is Failure -> throw RuntimeException("Compilation failed:\n${result.reasons.joinToString("\n")}")
+            is Success -> {
+                val actual = listOf(*result.value.constants)
+                if (expected != actual) {
+                    val message = "Constants assertion failed:\n" +
+                        "Expected:\n" +
+                        expected + "\n" +
+                        "Actual:\n" +
+                        actual
+                    println(message)
+                    throw RuntimeException(message)
+                }
+                true
+            }
         }
     }
 }
@@ -72,6 +83,14 @@ fun nextInstructionAsString(instruction: ByteArray): Pair<String, BytesRead> {
     val bytesRead = OpCode.width() + operandBytes
 
     return output to bytesRead
+}
+
+fun bytecodeAssertionFailedMessage(expected: Array<ByteArray>, actual: Array<ByteArray>): String {
+    return "Bytecode assertion failed:\n" +
+        "EXPECTED:\n" +
+        prettyPrinter(expected) + "\n" +
+        "RECEIVED:\n" +
+        prettyPrinter(actual)
 }
 
 fun Int.asAddress() = "%04d".format(this)
