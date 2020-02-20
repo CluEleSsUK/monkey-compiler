@@ -44,21 +44,22 @@ class VirtualMachineTest extends Specification {
         output.result() == expected
 
         where:
-        input                | expected
-        "true"               | new MBoolean(true)
-        "false"              | new MBoolean(false)
-        "true == true"       | new MBoolean(true)
-        "true != true"       | new MBoolean(false)
-        "true == false"      | new MBoolean(false)
-        "2 > 1"              | new MBoolean(true)
-        "2 < 1"              | new MBoolean(false)
-        "(2 > 1) == false"   | new MBoolean(false)
-        "(10 + 10) / 10 > 2" | new MBoolean(false)
-        "!true"              | new MBoolean(false)
-        "!false"             | new MBoolean(true)
-        "!!true"             | new MBoolean(true)
-        "!5"                 | new MBoolean(false)
-        "!!5"                | new MBoolean(true)
+        input                   | expected
+        "true"                  | new MBoolean(true)
+        "false"                 | new MBoolean(false)
+        "true == true"          | new MBoolean(true)
+        "true != true"          | new MBoolean(false)
+        "true == false"         | new MBoolean(false)
+        "2 > 1"                 | new MBoolean(true)
+        "2 < 1"                 | new MBoolean(false)
+        "(2 > 1) == false"      | new MBoolean(false)
+        "(10 + 10) / 10 > 2"    | new MBoolean(false)
+        "!true"                 | new MBoolean(false)
+        "!false"                | new MBoolean(true)
+        "!!true"                | new MBoolean(true)
+        "!5"                    | new MBoolean(false)
+        "!!5"                   | new MBoolean(true)
+        "!(if (false) { 5; } )" | new MBoolean(true)
     }
 
     def "Conditionals evaluate to the correct output"(String input, MObject expected) {
@@ -70,16 +71,17 @@ class VirtualMachineTest extends Specification {
         output.result() == expected
 
         where:
-        input                                  | expected
-        "if (true) { 10; }"                    | MInteger.from(10)
-        "if (true) { 10; } else { 20; }"       | MInteger.from(10)
-        "if (false) { 10; } else { 20; }"      | MInteger.from(20)
-        "if (1) { 10; }"                       | MInteger.from(10)
-        "if (1 < 2) { 10; }"                   | MInteger.from(10)
-        "if (1 < 2) { 10; } else { 20 + 10; }" | MInteger.from(10)
-        "if (1 > 2) { 10; } else { 20 + 10; }" | MInteger.from(30)
-        "if (1 >  2) { 10; }"                  | Null
-        "if (false) { 10; } "                  | Null
+        input                                        | expected
+        "if (true) { 10; }"                          | MInteger.from(10)
+        "if (true) { 10; } else { 20; }"             | MInteger.from(10)
+        "if (false) { 10; } else { 20; }"            | MInteger.from(20)
+        "if (1) { 10; }"                             | MInteger.from(10)
+        "if (1 < 2) { 10; }"                         | MInteger.from(10)
+        "if (1 < 2) { 10; } else { 20 + 10; }"       | MInteger.from(10)
+        "if (1 > 2) { 10; } else { 20 + 10; }"       | MInteger.from(30)
+        "if (1 >  2) { 10; }"                        | Null
+        "if (false) { 10; } "                        | Null
+        "if (if (false) { 5; }) { 5; } else { 20; }" | MInteger.from(20)
     }
 
     private Bytecode successfullyCompiled(String input) {
