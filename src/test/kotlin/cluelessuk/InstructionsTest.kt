@@ -2,6 +2,7 @@ package cluelessuk
 
 import cluelessuk.bytecode.ByteEncoder
 import cluelessuk.bytecode.OpCode
+import cluelessuk.bytecode.prettyPrinter
 import org.junit.Test
 import kotlin.test.assertEquals
 

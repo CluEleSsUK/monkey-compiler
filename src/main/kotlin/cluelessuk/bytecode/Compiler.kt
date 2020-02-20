@@ -14,8 +14,6 @@ import cluelessuk.vm.MObject
 
 class Bytecode(val instructions: ByteArray, val constants: Array<MObject>)
 
-// this will be used any time we rely on an address that is not yet known, and will be rewritten
-val placeholderAddress = 9999.toMemoryAddress()
 
 class Compiler {
 
@@ -60,11 +58,11 @@ class Compiler {
     }
 
     private fun compileInfixExpression(node: InfixExpression): CompilationResult<Bytecode> {
-        val result = when (node.operator) {
+        return when (node.operator) {
             "<" -> compile(node.right, node.left)
                 .then { emit(OpCode.GREATER_THAN) }
 
-            else -> compile(node.left, node.right).then {
+            else -> compile(node.left, node.right).flatMap {
                 when (node.operator) {
                     "+" -> emit(OpCode.ADD)
                     "-" -> emit(OpCode.SUBTRACT)
@@ -73,12 +71,12 @@ class Compiler {
                     "==" -> emit(OpCode.EQUAL)
                     "!=" -> emit(OpCode.NOT_EQUAL)
                     ">" -> emit(OpCode.GREATER_THAN)
-                    else -> Failure<Bytecode>(listOf("Operator not supported: ${node.operator}"))
+                    else -> Failure<MemoryAddress>(listOf("Operator not supported: ${node.operator}"))
                 }
             }
+        }.flatMap {
+            success()
         }
-
-        return result.flatMap { success() }
     }
 
     private fun compilePrefixExpression(node: PrefixExpression): CompilationResult<Bytecode> {
@@ -92,30 +90,41 @@ class Compiler {
     }
 
     private fun compileIfExpression(node: IfExpression): CompilationResult<Bytecode> {
-        return compile(node.condition).then {
-            // 9999 is a placeholder location that will be rewritten
-            val jumpPosition = emit(OpCode.JUMP_IF_NOT_TRUE, placeholderAddress)
+        val placeholderAddress = 9999.toMemoryAddress()
 
+        val compileCondition = {
+            compile(node.condition)
+                .flatMap { emit(OpCode.JUMP_IF_NOT_TRUE, placeholderAddress) }
+        }
+
+        val compileTruthyBranch = {
             compile(node.consequence)
                 .then(::removeLastIfPop)
-                // rewrite the 9999 to the next instruction
-                .then {
-                    if (node.alternative == null) {
-                        output.replaceOperand(jumpPosition, output.nextAvailableMemoryAddress())
-                    } else {
-                        val endOfConsequence = emit(OpCode.JUMP, placeholderAddress)
-                        output.replaceOperand(jumpPosition, output.nextAvailableMemoryAddress())
-
-                        compile(node.alternative)
-                            .then(::removeLastIfPop)
-                            .then { output.replaceOperand(endOfConsequence, output.nextAvailableMemoryAddress()) }
-                    }
-                }
+                .flatMap { emit(OpCode.JUMP, placeholderAddress) }
         }
+
+        val compileFalsyBranch = {
+            if (node.alternative == null) {
+                emit(OpCode.NULL).flatMap { success() }
+            } else {
+                compile(node.alternative)
+            }.then { removeLastIfPop() }
+        }
+
+        val rewriteToNextInstructionPointer = { pointer: MemoryAddress -> output.replaceOperand(pointer, output.nextAvailableMemoryAddress()) }
+
+        return compileCondition().map { jumpIfNotTruePointer ->
+            compileTruthyBranch()
+                .then { rewriteToNextInstructionPointer(jumpIfNotTruePointer) }
+                .map { postTruthyJumpPointer ->
+                    compileFalsyBranch().then { rewriteToNextInstructionPointer(postTruthyJumpPointer) }
+                }
+        }.flatMap { success() }
     }
 
     private fun removeLastIfPop() {
-        if (output.get().last() == OpCode.POP.byte()) {
+        val lastInstruction = output.last()
+        if (lastInstruction != null && opcodeFrom(lastInstruction) == OpCode.POP) {
             output.pop()
         }
     }
@@ -131,71 +140,12 @@ class Compiler {
         return success()
     }
 
-    private fun emit(opcode: OpCode, vararg operands: MemoryAddress): MemoryAddress {
+    private fun emit(opcode: OpCode, vararg operands: MemoryAddress): CompilationResult<MemoryAddress> {
         val instruction = byteEncoder.make(opcode, operands.toList())
-        return output.addInstructionForIndex(instruction)
+        return Success(output.addInstructionForIndex(instruction))
     }
 
     private fun success(): Success<Bytecode> {
         return Success(Bytecode(output.get(), constants.get()))
-    }
-}
-
-class ConstantPool {
-    private val objects = mutableListOf<MObject>()
-
-    // returns last index of constant pool as an ID for the item added
-    fun addConstantForIndex(obj: MObject): MemoryAddress {
-        objects += obj
-        return objects.lastIndex.toMemoryAddress()
-    }
-
-    fun get(): Array<MObject> = objects.toTypedArray()
-}
-
-class CompiledInstructions {
-    private val instructions = mutableListOf<ByteArray>()
-    // 0 . . . . n
-    private var lastInstruction: ByteArray? = null
-    // 0 . . . m, n
-    private var secondLastInstruction: ByteArray? = null
-
-    fun pop(): ByteArray? {
-        if (instructions.isEmpty()) {
-            return null
-        }
-
-        lastInstruction = secondLastInstruction
-        return instructions.removeAt(instructions.lastIndex)
-    }
-
-    fun addInstructionForIndex(instruction: ByteArray): MemoryAddress {
-        instructions += instruction
-        lastInstruction = instructions.lastOrNull()
-        secondLastInstruction = instructions.drop(1).lastOrNull()
-        return instructions.lastIndex.toMemoryAddress()
-    }
-
-    fun get(): ByteArray = flatten(instructions)
-
-    fun nextAvailableMemoryAddress(): MemoryAddress = get().size.toMemoryAddress()
-
-    private val byteEncoder = ByteEncoder()
-    fun replaceOperand(position: MemoryAddress, operand: MemoryAddress) {
-        if (position >= instructions.size.toMemoryAddress()) {
-            return
-        }
-
-        val opcode = OpCode.from(instructions[position.toInt()][0])
-        val updatedInstruction = byteEncoder.make(opcode, operand)
-        replaceInstruction(position, updatedInstruction)
-    }
-
-    private fun replaceInstruction(position: MemoryAddress, updatedInstruction: ByteArray) {
-        if (position >= instructions.size.toMemoryAddress()) {
-            return
-        }
-
-        instructions[position.toInt()] = updatedInstruction
     }
 }

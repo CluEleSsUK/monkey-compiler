@@ -9,7 +9,6 @@ sealed class Statement : Node()
 sealed class Expression : Node()
 
 data class Program(val statements: List<Statement>, val errors: List<String>) : Node() {
-    constructor(statements: List<Statement>) : this(statements, emptyList())
 
     fun hasErrors(): Boolean {
         return errors.isNotEmpty()

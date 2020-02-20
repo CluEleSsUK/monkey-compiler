@@ -13,6 +13,7 @@ import spock.lang.Specification
 
 class VirtualMachineTest extends Specification {
     def compiler = new Compiler()
+    def static Null = KotlinTestUtils.createNull()
 
     def "Integer arithmetic creates the expected output"(String input, MInteger expected) {
         given:
@@ -77,6 +78,8 @@ class VirtualMachineTest extends Specification {
         "if (1 < 2) { 10; }"                   | MInteger.from(10)
         "if (1 < 2) { 10; } else { 20 + 10; }" | MInteger.from(10)
         "if (1 > 2) { 10; } else { 20 + 10; }" | MInteger.from(30)
+        "if (1 >  2) { 10; }"                  | Null
+        "if (false) { 10; } "                  | Null
     }
 
     private Bytecode successfullyCompiled(String input) {

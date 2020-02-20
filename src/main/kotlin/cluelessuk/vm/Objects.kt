@@ -3,6 +3,7 @@ package cluelessuk.vm
 import cluelessuk.bytecode.from
 
 sealed class MObject(val type: String)
+object Null : MObject("NULL")
 
 data class MInteger(val value: Int) : MObject("INTEGER") {
 

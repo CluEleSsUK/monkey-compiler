@@ -9,6 +9,7 @@ enum class OpCode {
     DIVIDE,
     TRUE,
     FALSE,
+    NULL,
     EQUAL,
     NOT_EQUAL,
     GREATER_THAN,
@@ -41,6 +42,7 @@ val opcodeDefinitions = mapOf(
     OpCode.DIVIDE to OpCodeDefinition("OpDivide"),
     OpCode.TRUE to OpCodeDefinition("OpTrue"),
     OpCode.FALSE to OpCodeDefinition("OpFalse"),
+    OpCode.NULL to OpCodeDefinition("OpNull"),
     OpCode.EQUAL to OpCodeDefinition("OpEqual"),
     OpCode.NOT_EQUAL to OpCodeDefinition("OpNotEqual"),
     OpCode.GREATER_THAN to OpCodeDefinition("OpGreaterThan"),
@@ -49,3 +51,8 @@ val opcodeDefinitions = mapOf(
     OpCode.JUMP to OpCodeDefinition("OpJump", listOf(UShort.SIZE_BYTES)),
     OpCode.JUMP_IF_NOT_TRUE to OpCodeDefinition("OpJumpIfNotTrue", listOf(UShort.SIZE_BYTES))
 )
+
+// this will happily blow up if you pass in an empty array
+fun opcodeFrom(instruction: ByteArray): OpCode {
+    return OpCode.from(instruction[0])
+}

@@ -35,6 +35,7 @@ data class VirtualMachine(
                 OpCode.FALSE -> stack.push(MBoolean.FALSE)
                 OpCode.JUMP -> runJumpOperation()
                 OpCode.JUMP_IF_NOT_TRUE -> runJumpIfNotTrue()
+                OpCode.NULL -> stack.push(Null)
             }
             instructionPointer++
         }
@@ -148,6 +149,7 @@ private fun memoryAddressOperandOf(instruction: Instruction): MemoryAddress {
 
 private fun isTruthy(obj: MObject?): Boolean = when (obj) {
     null -> false
+    Null -> false
     is MBoolean -> obj.value
     is MInteger -> obj.value > 0
 }
