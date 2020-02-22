@@ -7,10 +7,13 @@ import cluelessuk.bytecode.OpCode
 import cluelessuk.bytecode.from
 import cluelessuk.bytecode.opcodeDefinitions
 
+const val globalsSize = UShort.MAX_VALUE
+
 data class VirtualMachine(
     private val bytecode: Bytecode
 ) {
     private val stack = CallStack<MObject>()
+    private val globals = arrayOfNulls<MObject>(globalsSize.toInt())
     fun result(): MObject? = stack.lastPoppedValue
 
     var instructionPointer = 0
@@ -36,6 +39,8 @@ data class VirtualMachine(
                 OpCode.JUMP -> runJumpOperation()
                 OpCode.JUMP_IF_NOT_TRUE -> runJumpIfNotTrue()
                 OpCode.NULL -> stack.push(Null)
+                OpCode.SET_GLOBAL -> runSetGlobal()
+                OpCode.GET_GLOBAL -> runGetGlobal()
             }
             instructionPointer++
         }
@@ -129,6 +134,21 @@ data class VirtualMachine(
             instructionPointer += operandsWidth(OpCode.JUMP_IF_NOT_TRUE)
         }
     }
+
+    private fun runSetGlobal() {
+        val global = stack.pop() ?: throw RuntimeException("Cannot set a global without a value on the stack!")
+        val globalIndex = memoryAddressOperandOf(instructionPointerOnwards()).toInt()
+        instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
+
+        globals[globalIndex] = global
+    }
+
+    private fun runGetGlobal() {
+        val globalIndex = memoryAddressOperandOf(instructionPointerOnwards()).toInt()
+        instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
+
+        stack.push(globals[globalIndex])
+    }
 }
 
 private fun opcodeFrom(instruction: Instruction): OpCode {
@@ -141,6 +161,7 @@ private fun opcodeFrom(instruction: Instruction): OpCode {
 
 private fun operandsWidth(opcode: OpCode): Int = opcodeDefinitions[opcode]?.operandWidthBytes?.sum() ?: 0
 
+// this converts the two bytes after the next opcode byte of the instruction into a memory address
 private fun memoryAddressOperandOf(instruction: Instruction): MemoryAddress {
     if (instruction.size < 3) {
         throw RuntimeException("Instruction expected a 3 byte instruction, but got ${instruction.size}")

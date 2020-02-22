@@ -84,6 +84,21 @@ class VirtualMachineTest extends Specification {
         "if (if (false) { 5; }) { 5; } else { 20; }" | MInteger.from(20)
     }
 
+    def "Global let statements can resolve values"(String input, MObject expected) {
+        given:
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
+
+        expect:
+        output.result() == expected
+
+        where:
+        input                                             | expected
+        "let one = 1; one;"                               | MInteger.from(1)
+        "let one = 1; let two = 2; one + two;"            | MInteger.from(3)
+        "let one = 1; let two = 2; one + one; one + two;" | MInteger.from(3)
+    }
+
     private Bytecode successfullyCompiled(String input) {
         def program = new Parser(new Lexer(input)).parseProgram()
         def compiled = compiler.compile(program)
