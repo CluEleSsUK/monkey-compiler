@@ -8,6 +8,7 @@ import cluelessuk.language.Parser
 import cluelessuk.bytecode.Compiler
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
+import cluelessuk.vm.MString
 
 import static cluelessuk.TestUtils.*
 
@@ -146,6 +147,22 @@ class CompilerKtTest extends Specification {
         then:
         ByteUtils.assertExpected(expectedBytecode, result)
         ByteUtils.assertExpectedConstants(expectedConstants, result)
+    }
+
+    def "Compiler emits expected code and constants for strings"(String input, MObject[] constants, List<byte[]> expected) {
+        given:
+        def program = new Parser(new Lexer(input)).parseProgram()
+        def result = compiler.compile(program)
+
+        expect:
+        result instanceof Success
+        compiler.constants.get() == constants
+        deepEqual(compiler.output.get(), expected)
+
+        where:
+        input              | constants                                   | expected
+        '"something"'      | [new MString("something")]                  | [bytecodeConstant(0), make(OpCode.POP)]
+        '"some" + "thing"' | [new MString("some"), new MString("thing")] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ADD), make(OpCode.POP)]
     }
 }
 

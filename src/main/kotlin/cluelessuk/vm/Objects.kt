@@ -51,3 +51,4 @@ data class MBoolean(val value: Boolean) : MObject("BOOLEAN") {
     }
 }
 
+data class MString(val value: String): MObject("STRING")

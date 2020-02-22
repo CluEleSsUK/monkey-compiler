@@ -171,4 +171,5 @@ private fun isTruthy(obj: MObject?): Boolean = when (obj) {
     null, Null -> false
     is MBoolean -> obj.value
     is MInteger -> obj.value > 0
+    else -> true
 }

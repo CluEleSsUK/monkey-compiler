@@ -11,8 +11,10 @@ import cluelessuk.language.LetStatement
 import cluelessuk.language.Node
 import cluelessuk.language.PrefixExpression
 import cluelessuk.language.Program
+import cluelessuk.language.StringLiteral
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
+import cluelessuk.vm.MString
 
 class Bytecode(val instructions: ByteArray, val constants: Array<MObject>)
 
@@ -33,6 +35,7 @@ class Compiler {
             is BlockStatement -> compile(node.statements)
             is IntegerLiteral -> compileIntegerLiteral(node)
             is BooleanLiteral -> compileBooleanLiteral(node)
+            is StringLiteral -> compileStringLiteral(node)
             is LetStatement -> compileLetStatement(node)
             is Identifier -> compileIdentifier(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
@@ -148,13 +151,17 @@ class Compiler {
 
     private fun compileIntegerLiteral(node: IntegerLiteral): CompilationResult<Bytecode> {
         val pointerToConstant = constants.addConstantForIndex(MInteger.from(node.value))
-        emit(OpCode.CONSTANT, pointerToConstant)
-        return success()
+        return emit(OpCode.CONSTANT, pointerToConstant).flatMap { success() }
     }
 
     private fun compileBooleanLiteral(node: BooleanLiteral): CompilationResult<Bytecode> {
         if (node.value) emit(OpCode.TRUE) else emit(OpCode.FALSE)
         return success()
+    }
+
+    private fun compileStringLiteral(node: StringLiteral): CompilationResult<Bytecode> {
+        val pointerToConstant = constants.addConstantForIndex(MString(node.value))
+        return emit(OpCode.CONSTANT, pointerToConstant).flatMap { success() }
     }
 
     private fun emit(opcode: OpCode, vararg operands: MemoryAddress): CompilationResult<MemoryAddress> {
