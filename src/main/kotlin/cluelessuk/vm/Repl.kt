@@ -15,10 +15,9 @@ fun main() {
 
 fun startRepl() {
     println("Monkey REPL! Type `exit` to exit.")
-
+    val compiler = Compiler()
 
     while (true) {
-        val compiler = Compiler()
         val input = readConsoleInput()
         if (input.isNullOrBlank() || input == exitKeyword) {
             break
@@ -61,4 +60,3 @@ fun renderError(program: Program) {
     println("Error(s) in program!")
     program.errors.forEach(::println)
 }
-

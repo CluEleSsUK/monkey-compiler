@@ -7,13 +7,12 @@ import cluelessuk.bytecode.OpCode
 import cluelessuk.bytecode.from
 import cluelessuk.bytecode.opcodeDefinitions
 
-const val globalsSize = UShort.MAX_VALUE
 
 data class VirtualMachine(
     private val bytecode: Bytecode
 ) {
     private val stack = CallStack<MObject>()
-    private val globals = arrayOfNulls<MObject>(globalsSize.toInt())
+    private val globalScope = Scope()
     fun result(): MObject? = stack.lastPoppedValue
 
     var instructionPointer = 0
@@ -47,7 +46,6 @@ data class VirtualMachine(
 
         return this
     }
-
 
     private fun instructionPointerOnwards(): ByteArray {
         return bytecode.instructions.sliceArray(instructionPointer until bytecode.instructions.size)
@@ -140,14 +138,14 @@ data class VirtualMachine(
         val globalIndex = memoryAddressOperandOf(instructionPointerOnwards()).toInt()
         instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
 
-        globals[globalIndex] = global
+        globalScope[globalIndex] = global
     }
 
     private fun runGetGlobal() {
         val globalIndex = memoryAddressOperandOf(instructionPointerOnwards()).toInt()
         instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
 
-        stack.push(globals[globalIndex])
+        stack.push(globalScope[globalIndex])
     }
 }
 
