@@ -33,4 +33,10 @@ sealed class CompilationResult<T> {
 }
 
 data class Success<T>(val value: T) : CompilationResult<T>()
-data class Failure<T>(val reasons: List<String>) : CompilationResult<T>()
+data class Failure<T>(val reasons: List<String>) : CompilationResult<T>() {
+    companion object {
+        fun <T> of(vararg reasons: String): Failure<T> {
+            return Failure(reasons.toList())
+        }
+    }
+}

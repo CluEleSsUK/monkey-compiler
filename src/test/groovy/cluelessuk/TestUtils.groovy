@@ -32,7 +32,7 @@ class TestUtils {
     }
 
     static bytecodeConstant(int memoryAddress) {
-        return encoder.make(OpCode.CONSTANT, ushortListOf(memoryAddress))
+        return make(OpCode.CONSTANT, memoryAddress)
     }
 
     static bytecode(OpCode opcode) {

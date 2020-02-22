@@ -3,9 +3,11 @@ package cluelessuk.bytecode
 import cluelessuk.language.BlockStatement
 import cluelessuk.language.BooleanLiteral
 import cluelessuk.language.ExpressionStatement
+import cluelessuk.language.Identifier
 import cluelessuk.language.IfExpression
 import cluelessuk.language.InfixExpression
 import cluelessuk.language.IntegerLiteral
+import cluelessuk.language.LetStatement
 import cluelessuk.language.Node
 import cluelessuk.language.PrefixExpression
 import cluelessuk.language.Program
@@ -20,6 +22,7 @@ class Compiler {
     private val byteEncoder = ByteEncoder()
     private val output = CompiledInstructions()
     private val constants = ConstantPool()
+    private val symbolTable = SymbolTable()
 
     fun compile(node: Node): CompilationResult<Bytecode> {
         return when (node) {
@@ -31,6 +34,8 @@ class Compiler {
             is BlockStatement -> compile(node.statements)
             is IntegerLiteral -> compileIntegerLiteral(node)
             is BooleanLiteral -> compileBooleanLiteral(node)
+            is LetStatement -> compileLetStatement(node)
+            is Identifier -> compileIdentifier(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
         }
     }
@@ -120,6 +125,19 @@ class Compiler {
                     compileFalsyBranch().then { rewriteToNextInstructionPointer(postTruthyJumpPointer) }
                 }
         }.flatMap { success() }
+    }
+
+    private fun compileLetStatement(letStatement: LetStatement): CompilationResult<Bytecode> {
+        return compile(letStatement.value).then {
+            val symbol = symbolTable.define(letStatement.name.value)
+            emit(OpCode.SET_GLOBAL, symbol.index.toMemoryAddress())
+        }
+    }
+
+    private fun compileIdentifier(identifier: Identifier): CompilationResult<Bytecode> {
+        val symbol = symbolTable.resolve(identifier.value) ?: return Failure.of("Identifier ${identifier.value} is not bound")
+
+        return emit(OpCode.GET_GLOBAL, symbol.index.toMemoryAddress()).flatMap { success() }
     }
 
     private fun removeLastIfPop() {

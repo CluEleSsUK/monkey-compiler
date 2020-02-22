@@ -16,7 +16,9 @@ enum class OpCode {
     MINUS,
     BANG,
     JUMP,
-    JUMP_IF_NOT_TRUE;
+    JUMP_IF_NOT_TRUE,
+    SET_GLOBAL,
+    GET_GLOBAL;
 
     fun byte(): Byte = this.ordinal.toByte()
 
@@ -33,8 +35,10 @@ enum class OpCode {
 
 data class OpCodeDefinition(val name: String, val operandWidthBytes: List<Int> = emptyList())
 
+const val pointerSize = UShort.SIZE_BYTES
+
 val opcodeDefinitions = mapOf(
-    OpCode.CONSTANT to OpCodeDefinition("OpConstant", listOf(UShort.SIZE_BYTES)),
+    OpCode.CONSTANT to OpCodeDefinition("OpConstant", listOf(pointerSize)),
     OpCode.POP to OpCodeDefinition("OpPop"),
     OpCode.ADD to OpCodeDefinition("OpAdd"),
     OpCode.SUBTRACT to OpCodeDefinition("OpSubstract"),
@@ -48,8 +52,10 @@ val opcodeDefinitions = mapOf(
     OpCode.GREATER_THAN to OpCodeDefinition("OpGreaterThan"),
     OpCode.MINUS to OpCodeDefinition("OpMinus"),
     OpCode.BANG to OpCodeDefinition("OpBang"),
-    OpCode.JUMP to OpCodeDefinition("OpJump", listOf(UShort.SIZE_BYTES)),
-    OpCode.JUMP_IF_NOT_TRUE to OpCodeDefinition("OpJumpIfNotTrue", listOf(UShort.SIZE_BYTES))
+    OpCode.JUMP to OpCodeDefinition("OpJump", listOf(pointerSize)),
+    OpCode.JUMP_IF_NOT_TRUE to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize)),
+    OpCode.SET_GLOBAL to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize)),
+    OpCode.GET_GLOBAL to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize))
 )
 
 // this will happily blow up if you pass in an empty array

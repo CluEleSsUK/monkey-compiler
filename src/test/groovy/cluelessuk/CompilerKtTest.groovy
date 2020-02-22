@@ -114,5 +114,38 @@ class CompilerKtTest extends Specification {
         ByteUtils.assertExpectedConstants(expectedConstants, result)
     }
 
+    def "Globals can be set, retrieved and have their values used as expressions"() {
+        given:
+        def input = """
+            let x = 33; 
+            let y = 66;
+            let z = x + y;
+            z;
+        """
+        def expectedBytecode = [
+                bytecodeConstant(0),
+                make(OpCode.SET_GLOBAL, 0),
+
+                bytecodeConstant(1),
+                make(OpCode.SET_GLOBAL, 1),
+
+                make(OpCode.GET_GLOBAL, 0),
+                make(OpCode.GET_GLOBAL, 1),
+                bytecode(OpCode.ADD),
+                make(OpCode.SET_GLOBAL, 2),
+                make(OpCode.GET_GLOBAL, 2),
+                bytecode(OpCode.POP)
+        ]
+
+        def expectedConstants = [MInteger.from(33), MInteger.from(66)]
+
+        when:
+        def program = new Parser(new Lexer(input)).parseProgram()
+        def result = compiler.compile(program)
+
+        then:
+        ByteUtils.assertExpected(expectedBytecode, result)
+        ByteUtils.assertExpectedConstants(expectedConstants, result)
+    }
 }
 
