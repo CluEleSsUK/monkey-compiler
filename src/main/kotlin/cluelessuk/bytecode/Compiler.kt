@@ -16,7 +16,6 @@ import cluelessuk.vm.MObject
 
 class Bytecode(val instructions: ByteArray, val constants: Array<MObject>)
 
-
 class Compiler {
 
     private val byteEncoder = ByteEncoder()

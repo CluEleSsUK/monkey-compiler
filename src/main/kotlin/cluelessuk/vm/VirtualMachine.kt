@@ -135,14 +135,14 @@ data class VirtualMachine(
 
     private fun runSetGlobal() {
         val global = stack.pop() ?: throw RuntimeException("Cannot set a global without a value on the stack!")
-        val globalIndex = memoryAddressOperandOf(instructionPointerOnwards()).toInt()
+        val globalIndex = memoryAddressOperandOf(instructionPointerOnwards())
         instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
 
         globalScope[globalIndex] = global
     }
 
     private fun runGetGlobal() {
-        val globalIndex = memoryAddressOperandOf(instructionPointerOnwards()).toInt()
+        val globalIndex = memoryAddressOperandOf(instructionPointerOnwards())
         instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
 
         stack.push(globalScope[globalIndex])
