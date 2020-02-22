@@ -67,7 +67,8 @@ data class VirtualMachine(
         val expressionResult = when {
             left is MInteger && right is MInteger -> runIntegerBinaryOperation(opcode, left, right)
             left is MBoolean && right is MBoolean -> runBooleanBinaryOperation(opcode, left, right)
-            else -> throw RuntimeException("Opcode not supported for the types provided (${left?.type}")
+            left is MString && right is MString -> runStringBinaryOperation(opcode, left, right)
+            else -> throw RuntimeException("Opcode not supported for the types provided (${left?.type})")
         }
 
         stack.push(expressionResult)
@@ -89,6 +90,13 @@ data class VirtualMachine(
             OpCode.EQUAL -> MBoolean(left == right)
             OpCode.NOT_EQUAL -> MBoolean(left != right)
             else -> throw RuntimeException("Infix opcode $opcode not supported for Boolean")
+        }
+    }
+
+    private fun runStringBinaryOperation(opcode: OpCode, left: MString, right: MString): MObject {
+        return when (opcode) {
+            OpCode.ADD -> left + right
+            else -> throw java.lang.RuntimeException("Infix opcode $opcode not supported for String")
         }
     }
 

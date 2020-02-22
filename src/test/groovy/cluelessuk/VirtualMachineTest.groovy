@@ -8,6 +8,7 @@ import cluelessuk.language.Parser
 import cluelessuk.vm.MBoolean
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
+import cluelessuk.vm.MString
 import cluelessuk.vm.VirtualMachine
 import spock.lang.Specification
 
@@ -97,6 +98,20 @@ class VirtualMachineTest extends Specification {
         "let one = 1; one;"                               | MInteger.from(1)
         "let one = 1; let two = 2; one + two;"            | MInteger.from(3)
         "let one = 1; let two = 2; one + one; one + two;" | MInteger.from(3)
+    }
+
+    def "String expressions output the correct String values"(String input, MObject expected) {
+        given:
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
+
+        expect:
+        output.result() == expected
+
+        where:
+        input              | expected
+        '"something"'      | new MString("something")
+        '"some" + "thing"' | new MString("something")
     }
 
     private Bytecode successfullyCompiled(String input) {
