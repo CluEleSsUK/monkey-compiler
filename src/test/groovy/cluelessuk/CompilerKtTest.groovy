@@ -1,20 +1,16 @@
 package cluelessuk
 
-
+import cluelessuk.bytecode.Compiler
 import cluelessuk.bytecode.OpCode
 import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
-import cluelessuk.bytecode.Compiler
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
 import cluelessuk.vm.MString
-
-import static cluelessuk.TestUtils.*
-
-
 import spock.lang.Specification
 
+import static cluelessuk.TestUtils.*
 
 class CompilerKtTest extends Specification {
 
@@ -163,6 +159,24 @@ class CompilerKtTest extends Specification {
         input              | constants                                   | expected
         '"something"'      | [new MString("something")]                  | [bytecodeConstant(0), make(OpCode.POP)]
         '"some" + "thing"' | [new MString("some"), new MString("thing")] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ADD), make(OpCode.POP)]
+    }
+
+    def "Compiler emits valid bytecode for array literals"(String input, MObject[] constants, List<byte[]> expected) {
+        given:
+        def program = new Parser(new Lexer(input)).parseProgram()
+        def result = compiler.compile(program)
+
+        expect:
+        result instanceof Success
+        compiler.constants.get() == constants
+        deepEqual(compiler.output.get(), expected)
+
+        where:
+        input     | constants                            | expected
+        "[]"      | []                                   | [make(OpCode.ARRAY, 0), make(OpCode.POP)]
+        "[1]"     | [MInteger.from(1)]                   | [bytecodeConstant(0), make(OpCode.ARRAY, 1), make(OpCode.POP)]
+        "[1 + 1]" | [MInteger.from(1), MInteger.from(1)] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ADD), make(OpCode.ARRAY, 1), make(OpCode.POP)]
+        "[1, 2]"  | [MInteger.from(1), MInteger.from(2)] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ARRAY, 2), make(OpCode.POP)]
     }
 }
 

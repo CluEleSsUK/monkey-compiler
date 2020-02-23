@@ -18,7 +18,8 @@ enum class OpCode {
     JUMP,
     JUMP_IF_NOT_TRUE,
     SET_GLOBAL,
-    GET_GLOBAL;
+    GET_GLOBAL,
+    ARRAY;
 
     fun byte(): Byte = this.ordinal.toByte()
 
@@ -36,6 +37,7 @@ enum class OpCode {
 data class OpCodeDefinition(val name: String, val operandWidthBytes: List<Int> = emptyList())
 
 const val pointerSize = UShort.SIZE_BYTES
+const val maxArrayLength = UShort.SIZE_BYTES
 
 val opcodeDefinitions = mapOf(
     OpCode.CONSTANT to OpCodeDefinition("OpConstant", listOf(pointerSize)),
@@ -55,7 +57,8 @@ val opcodeDefinitions = mapOf(
     OpCode.JUMP to OpCodeDefinition("OpJump", listOf(pointerSize)),
     OpCode.JUMP_IF_NOT_TRUE to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize)),
     OpCode.SET_GLOBAL to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize)),
-    OpCode.GET_GLOBAL to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize))
+    OpCode.GET_GLOBAL to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize)),
+    OpCode.ARRAY to OpCodeDefinition("OpArray", listOf(maxArrayLength))
 )
 
 // this will happily blow up if you pass in an empty array

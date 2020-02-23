@@ -1,5 +1,6 @@
 package cluelessuk.bytecode
 
+import cluelessuk.language.ArrayLiteral
 import cluelessuk.language.BlockStatement
 import cluelessuk.language.BooleanLiteral
 import cluelessuk.language.ExpressionStatement
@@ -36,6 +37,7 @@ class Compiler {
             is IntegerLiteral -> compileIntegerLiteral(node)
             is BooleanLiteral -> compileBooleanLiteral(node)
             is StringLiteral -> compileStringLiteral(node)
+            is ArrayLiteral -> compileArrayLiteral(node)
             is LetStatement -> compileLetStatement(node)
             is Identifier -> compileIdentifier(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
@@ -61,13 +63,13 @@ class Compiler {
 
     private fun compileExpressionStatement(node: ExpressionStatement): CompilationResult<Bytecode> {
         return compile(node.expression)
-            .then { emit(OpCode.POP) }
+            .then { emitForAddress(OpCode.POP) }
     }
 
     private fun compileInfixExpression(node: InfixExpression): CompilationResult<Bytecode> {
         return when (node.operator) {
             "<" -> compile(node.right, node.left)
-                .then { emit(OpCode.GREATER_THAN) }
+                .flatMap { emit(OpCode.GREATER_THAN) }
 
             else -> compile(node.left, node.right).flatMap {
                 when (node.operator) {
@@ -78,20 +80,18 @@ class Compiler {
                     "==" -> emit(OpCode.EQUAL)
                     "!=" -> emit(OpCode.NOT_EQUAL)
                     ">" -> emit(OpCode.GREATER_THAN)
-                    else -> Failure<MemoryAddress>(listOf("Operator not supported: ${node.operator}"))
+                    else -> Failure(listOf("Operator not supported: ${node.operator}"))
                 }
             }
-        }.flatMap {
-            success()
         }
     }
 
     private fun compilePrefixExpression(node: PrefixExpression): CompilationResult<Bytecode> {
-        return compile(node.right).then {
+        return compile(node.right).flatMap {
             when (node.operator) {
                 "!" -> emit(OpCode.BANG)
                 "-" -> emit(OpCode.MINUS)
-                else -> Failure<Bytecode>(listOf("Prefix operator ${node.operator} not supported"))
+                else -> Failure(listOf("Prefix operator ${node.operator} not supported"))
             }
         }
     }
@@ -101,18 +101,18 @@ class Compiler {
 
         val compileCondition = {
             compile(node.condition)
-                .flatMap { emit(OpCode.JUMP_IF_NOT_TRUE, placeholderAddress) }
+                .flatMap { emitForAddress(OpCode.JUMP_IF_NOT_TRUE, placeholderAddress) }
         }
 
         val compileTruthyBranch = {
             compile(node.consequence)
                 .then(::removeLastIfPop)
-                .flatMap { emit(OpCode.JUMP, placeholderAddress) }
+                .flatMap { emitForAddress(OpCode.JUMP, placeholderAddress) }
         }
 
         val compileFalsyBranch = {
             if (node.alternative == null) {
-                emit(OpCode.NULL).flatMap { success() }
+                emitForAddress(OpCode.NULL).flatMap { success() }
             } else {
                 compile(node.alternative)
             }.then { removeLastIfPop() }
@@ -120,26 +120,26 @@ class Compiler {
 
         val rewriteToNextInstructionPointer = { pointer: MemoryAddress -> output.replaceOperand(pointer, output.nextAvailableMemoryAddress()) }
 
-        return compileCondition().map { jumpIfNotTruePointer ->
-            compileTruthyBranch()
-                .then { rewriteToNextInstructionPointer(jumpIfNotTruePointer) }
-                .map { postTruthyJumpPointer ->
-                    compileFalsyBranch().then { rewriteToNextInstructionPointer(postTruthyJumpPointer) }
-                }
-        }.flatMap { success() }
+        return compileCondition()
+            .flatMap { jumpIfNotTruePointer ->
+                compileTruthyBranch().andWith { jumpIfNotTruePointer.map { rewriteToNextInstructionPointer(it) } }
+            }
+            .flatMap { postTruthyJumpPointer ->
+                compileFalsyBranch().andWith { postTruthyJumpPointer.map { rewriteToNextInstructionPointer(it) } }
+            }
     }
 
     private fun compileLetStatement(letStatement: LetStatement): CompilationResult<Bytecode> {
         return compile(letStatement.value).then {
             val symbol = symbolTable.define(letStatement.name.value)
-            emit(OpCode.SET_GLOBAL, symbol.index.toMemoryAddress())
+            emitForAddress(OpCode.SET_GLOBAL, symbol.index.toMemoryAddress())
         }
     }
 
     private fun compileIdentifier(identifier: Identifier): CompilationResult<Bytecode> {
         val symbol = symbolTable.resolve(identifier.value) ?: return Failure.of("Identifier ${identifier.value} is not bound")
 
-        return emit(OpCode.GET_GLOBAL, symbol.index.toMemoryAddress()).flatMap { success() }
+        return emitForAddress(OpCode.GET_GLOBAL, symbol.index.toMemoryAddress()).flatMap { success() }
     }
 
     private fun removeLastIfPop() {
@@ -151,22 +151,32 @@ class Compiler {
 
     private fun compileIntegerLiteral(node: IntegerLiteral): CompilationResult<Bytecode> {
         val pointerToConstant = constants.addConstantForIndex(MInteger.from(node.value))
-        return emit(OpCode.CONSTANT, pointerToConstant).flatMap { success() }
+        return emitForAddress(OpCode.CONSTANT, pointerToConstant).flatMap { success() }
     }
 
     private fun compileBooleanLiteral(node: BooleanLiteral): CompilationResult<Bytecode> {
-        if (node.value) emit(OpCode.TRUE) else emit(OpCode.FALSE)
+        if (node.value) emitForAddress(OpCode.TRUE) else emitForAddress(OpCode.FALSE)
         return success()
     }
 
     private fun compileStringLiteral(node: StringLiteral): CompilationResult<Bytecode> {
         val pointerToConstant = constants.addConstantForIndex(MString(node.value))
-        return emit(OpCode.CONSTANT, pointerToConstant).flatMap { success() }
+        return emitForAddress(OpCode.CONSTANT, pointerToConstant).flatMap { success() }
     }
 
-    private fun emit(opcode: OpCode, vararg operands: MemoryAddress): CompilationResult<MemoryAddress> {
+    private fun compileArrayLiteral(node: ArrayLiteral): CompilationResult<Bytecode> {
+        return node.elements.fold(success() as CompilationResult<Bytecode>) { acc, next -> acc.flatMap { compile(next) } }
+            .flatMap { emitForAddress(OpCode.ARRAY, node.elements.size.toMemoryAddress()) }
+            .flatMap { success() }
+    }
+
+    private fun emitForAddress(opcode: OpCode, vararg operands: MemoryAddress): CompilationResult<MemoryAddress> {
         val instruction = byteEncoder.make(opcode, operands.toList())
         return Success(output.addInstructionForIndex(instruction))
+    }
+
+    private fun emit(opcode: OpCode, vararg operands: MemoryAddress): CompilationResult<Bytecode> {
+        return emitForAddress(opcode, *operands).flatMap { success() }
     }
 
     private fun success(): Success<Bytecode> {

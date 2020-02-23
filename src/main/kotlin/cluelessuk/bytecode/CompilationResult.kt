@@ -26,9 +26,12 @@ sealed class CompilationResult<T> {
         return this
     }
 
-    fun orElse(block: () -> T): T = when (this) {
-        is Failure -> block()
-        is Success -> this.value
+    fun andWith(block: () -> CompilationResult<Unit>): CompilationResult<T> {
+        if (this is Failure) {
+            return Failure(this.reasons)
+        }
+
+        return block().flatMap { this }
     }
 }
 
