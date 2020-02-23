@@ -115,7 +115,7 @@ class Compiler {
                 emitForAddress(OpCode.NULL).flatMap { success() }
             } else {
                 compile(node.alternative)
-            }.then { removeLastIfPop() }
+            }.then(::removeLastIfPop)
         }
 
         val rewriteToNextInstructionPointer = { pointer: MemoryAddress -> output.replaceOperand(pointer, output.nextAvailableMemoryAddress()) }

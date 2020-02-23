@@ -4,6 +4,7 @@ import cluelessuk.bytecode.Bytecode
 import cluelessuk.bytecode.Instruction
 import cluelessuk.bytecode.MemoryAddress
 import cluelessuk.bytecode.OpCode
+import cluelessuk.bytecode.UInt16
 import cluelessuk.bytecode.from
 import cluelessuk.bytecode.opcodeDefinitions
 
@@ -40,6 +41,7 @@ data class VirtualMachine(
                 OpCode.NULL -> stack.push(Null)
                 OpCode.SET_GLOBAL -> runSetGlobal()
                 OpCode.GET_GLOBAL -> runGetGlobal()
+                OpCode.ARRAY -> buildAndPushArray()
             }
             instructionPointer++
         }
@@ -155,6 +157,19 @@ data class VirtualMachine(
 
         stack.push(globalScope[globalIndex])
     }
+
+    private fun buildAndPushArray() {
+        val arrayLength = intOperandOf(instructionPointerOnwards()).toInt()
+        instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
+
+        val array = Array<MObject>(arrayLength) { Null }
+        val lastIndex = arrayLength - 1
+        for (i in lastIndex downTo 0) {
+            array[i] = stack.pop() ?: Null
+        }
+
+        stack.push(MArray(array))
+    }
 }
 
 private fun opcodeFrom(instruction: Instruction): OpCode {
@@ -172,7 +187,15 @@ private fun memoryAddressOperandOf(instruction: Instruction): MemoryAddress {
     if (instruction.size < 3) {
         throw RuntimeException("Instruction expected a 3 byte instruction, but got ${instruction.size}")
     }
-    return UShort.from(instruction[1], instruction[2])
+    return MemoryAddress.from(instruction[1], instruction[2])
+}
+
+// this converts the two bytes after the next opcode byte of the instruction into a 16bit UInt
+private fun intOperandOf(instruction: Instruction): UInt16 {
+    if (instruction.size < 3) {
+        throw RuntimeException("Instruction expected a 3 byte instruction, but got ${instruction.size}")
+    }
+    return UInt16.from(instruction[1], instruction[2])
 }
 
 private fun isTruthy(obj: MObject?): Boolean = when (obj) {

@@ -3,14 +3,6 @@ package cluelessuk.bytecode
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-
-typealias MemoryAddress = UShort
-typealias MemoryAddressArray = UShortArray
-fun Int.toMemoryAddress() = this.toUShort()
-
-typealias Instruction = ByteArray
-typealias BytesRead = Int
-
 class ByteEncoder {
 
     fun make(opcode: OpCode): Instruction = make(opcode, emptyList())

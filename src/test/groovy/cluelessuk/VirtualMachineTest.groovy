@@ -5,6 +5,7 @@ import cluelessuk.bytecode.Compiler
 import cluelessuk.bytecode.Success
 import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
+import cluelessuk.vm.MArray
 import cluelessuk.vm.MBoolean
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
@@ -112,6 +113,24 @@ class VirtualMachineTest extends Specification {
         input              | expected
         '"something"'      | new MString("something")
         '"some" + "thing"' | new MString("something")
+    }
+
+    def "Array expressions evaluate sub-expressions and output the correct types"(String input, MObject expected) {
+        given:
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
+
+        expect:
+        output.result() == expected
+
+        where:
+        input                        | expected
+        '[]'                         | MArray.from([])
+        '[1]'                        | MArray.from([MInteger.from(1)])
+        '[1, 2]'                     | MArray.from([MInteger.from(1), MInteger.from(2)])
+        '[1 + 1, 2 * 2]'             | MArray.from([MInteger.from(2), MInteger.from(4)])
+        '["abc" + "def", 3 + 2 * 2]' | MArray.from([new MString("abcdef"), MInteger.from(7)])
+        '[if (false) { 5; }]'        | MArray.from([Null])
     }
 
     private Bytecode successfullyCompiled(String input) {
