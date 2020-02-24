@@ -9,6 +9,7 @@ import cluelessuk.language.IfExpression
 import cluelessuk.language.InfixExpression
 import cluelessuk.language.IntegerLiteral
 import cluelessuk.language.LetStatement
+import cluelessuk.language.MapLiteral
 import cluelessuk.language.Node
 import cluelessuk.language.PrefixExpression
 import cluelessuk.language.Program
@@ -38,6 +39,7 @@ class Compiler {
             is BooleanLiteral -> compileBooleanLiteral(node)
             is StringLiteral -> compileStringLiteral(node)
             is ArrayLiteral -> compileArrayLiteral(node)
+            is MapLiteral -> compileMapLiteral(node)
             is LetStatement -> compileLetStatement(node)
             is Identifier -> compileIdentifier(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
@@ -168,6 +170,14 @@ class Compiler {
         return node.elements.fold(success() as CompilationResult<Bytecode>) { acc, next -> acc.flatMap { compile(next) } }
             .flatMap { emitForAddress(OpCode.ARRAY, node.elements.size.toMemoryAddress()) }
             .flatMap { success() }
+    }
+
+    private fun compileMapLiteral(node: MapLiteral): CompilationResult<Bytecode> {
+        return node.elements.entries.fold(success() as CompilationResult<Bytecode>) { acc, nextEntry ->
+            acc.flatMap { compile(nextEntry.key) }
+                .flatMap { compile(nextEntry.value) }
+        }
+            .then { emit(OpCode.HASH_MAP, (node.elements.size * 2).toUInt16()) }
     }
 
     private fun emitForAddress(opcode: OpCode, vararg operands: MemoryAddress): CompilationResult<MemoryAddress> {

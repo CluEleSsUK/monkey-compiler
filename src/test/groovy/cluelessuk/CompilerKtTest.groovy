@@ -145,15 +145,14 @@ class CompilerKtTest extends Specification {
         ByteUtils.assertExpectedConstants(expectedConstants, result)
     }
 
-    def "Compiler emits expected code and constants for strings"(String input, MObject[] constants, List<byte[]> expected) {
+    def "Compiler emits expected code and constants for strings"(String input, List<MObject> constants, List<byte[]> expected) {
         given:
         def program = new Parser(new Lexer(input)).parseProgram()
         def result = compiler.compile(program)
 
         expect:
-        result instanceof Success
-        compiler.constants.get() == constants
-        deepEqual(compiler.output.get(), expected)
+        ByteUtils.assertExpectedConstants(constants, result)
+        ByteUtils.assertExpected(expected, result)
 
         where:
         input              | constants                                   | expected
@@ -161,15 +160,14 @@ class CompilerKtTest extends Specification {
         '"some" + "thing"' | [new MString("some"), new MString("thing")] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ADD), make(OpCode.POP)]
     }
 
-    def "Compiler emits valid bytecode for array literals"(String input, MObject[] constants, List<byte[]> expected) {
+    def "Compiler emits valid bytecode for array literals"(String input, List<MObject> constants, List<byte[]> expected) {
         given:
         def program = new Parser(new Lexer(input)).parseProgram()
         def result = compiler.compile(program)
 
         expect:
-        result instanceof Success
-        compiler.constants.get() == constants
-        deepEqual(compiler.output.get(), expected)
+        ByteUtils.assertExpectedConstants(constants, result)
+        ByteUtils.assertExpected(expected, result)
 
         where:
         input     | constants                            | expected
@@ -178,5 +176,22 @@ class CompilerKtTest extends Specification {
         "[1 + 1]" | [MInteger.from(1), MInteger.from(1)] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ADD), make(OpCode.ARRAY, 1), make(OpCode.POP)]
         "[1, 2]"  | [MInteger.from(1), MInteger.from(2)] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ARRAY, 2), make(OpCode.POP)]
     }
+
+    def "Compiler emits valid bytecode for hashmap literals"(String input, List<MObject> constants, List<byte[]> expected) {
+        given:
+        def program = new Parser(new Lexer(input)).parseProgram()
+        def result = compiler.compile(program)
+
+        expect:
+        ByteUtils.assertExpectedConstants(constants, result)
+        ByteUtils.assertExpected(expected, result)
+
+        where:
+        input                  | constants                                                                                                    | expected
+        "{}"                   | []                                                                                                           | [make(OpCode.HASH_MAP, 0), make(OpCode.POP)]
+        "{1: 2}"               | [MInteger.from(1), MInteger.from(2)]                                                                         | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.HASH_MAP, 2), make(OpCode.POP)]
+        "{1 + 2: 3 * 4, 5: 6}" | [MInteger.from(1), MInteger.from(2), MInteger.from(3), MInteger.from(4), MInteger.from(5), MInteger.from(6)] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ADD), bytecodeConstant(2), bytecodeConstant(3), make(OpCode.MULTIPLY), bytecodeConstant(4), bytecodeConstant(5), make(OpCode.HASH_MAP, 4), make(OpCode.POP)]
+    }
+
 }
 

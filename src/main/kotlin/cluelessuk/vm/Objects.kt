@@ -80,3 +80,5 @@ data class MArray(val values: Array<MObject>) : MObject("ARRAY") {
         }
     }
 }
+
+data class MHashMap(val values: Map<MObject, MObject>)
