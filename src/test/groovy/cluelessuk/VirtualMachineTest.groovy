@@ -7,6 +7,7 @@ import cluelessuk.language.Lexer
 import cluelessuk.language.Parser
 import cluelessuk.vm.MArray
 import cluelessuk.vm.MBoolean
+import cluelessuk.vm.MHashMap
 import cluelessuk.vm.MInteger
 import cluelessuk.vm.MObject
 import cluelessuk.vm.MString
@@ -127,10 +128,25 @@ class VirtualMachineTest extends Specification {
         input                        | expected
         '[]'                         | MArray.from([])
         '[1]'                        | MArray.from([MInteger.from(1)])
-        '[1, 2]'                     | MArray.from([MInteger.from(1), MInteger.from(2)])
+        '[9, 2]'                     | MArray.from([MInteger.from(9), MInteger.from(2)])
         '[1 + 1, 2 * 2]'             | MArray.from([MInteger.from(2), MInteger.from(4)])
         '["abc" + "def", 3 + 2 * 2]' | MArray.from([new MString("abcdef"), MInteger.from(7)])
         '[if (false) { 5; }]'        | MArray.from([Null])
+    }
+
+    def "Hash literals evaluate sub-expressions"(String input, MObject expected) {
+        given:
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
+
+        expect:
+        output.result() == expected
+
+        where:
+        input                            | expected
+        '{}'                             | MHashMap.from([:])
+        '{ 1: 2, 2: 3 }'                 | MHashMap.from([(MInteger.from(1)): MInteger.from(2), (MInteger.from(2)): MInteger.from(3)])
+        '{ 1 + 1: 2 + 2, 2 + 2: 3 + 3 }' | MHashMap.from([(MInteger.from(2)): MInteger.from(4), (MInteger.from(4)): MInteger.from(6)])
     }
 
     private Bytecode successfullyCompiled(String input) {

@@ -2,7 +2,12 @@ package cluelessuk.vm
 
 import cluelessuk.bytecode.from
 
-sealed class MObject(val type: String)
+sealed class MObject(val type: String) {
+    fun hashKey(): MInteger {
+        return MInteger.from(this.hashCode())
+    }
+}
+
 object Null : MObject("NULL")
 
 data class MInteger(val value: Int) : MObject("INTEGER") {
@@ -64,14 +69,10 @@ data class MArray(val values: Array<MObject>) : MObject("ARRAY") {
 
         other as MArray
 
-        if (!values.contentEquals(other.values)) return false
-
-        return true
+        return values.contentEquals(other.values)
     }
 
-    override fun hashCode(): Int {
-        return values.contentHashCode()
-    }
+    override fun hashCode(): Int = values.contentHashCode()
 
     companion object {
         @JvmStatic
@@ -81,4 +82,46 @@ data class MArray(val values: Array<MObject>) : MObject("ARRAY") {
     }
 }
 
-data class MHashMap(val values: Map<MObject, MObject>)
+// currently does not account for collisions
+class MHashMap : MObject("HASHMAP") {
+
+    private var values = Array<MObject?>(1024) { null }
+
+    fun put(key: MObject, value: MObject?): MHashMap {
+        val hashedKey = key.hashKey().value
+        if (hashedKey > values.lastIndex) {
+            values = values.copyOf(hashedKey * 2)
+        }
+
+        values[hashedKey] = value
+        return this
+    }
+
+    fun get(key: MObject): MObject {
+        val hashedKey = key.hashKey().value
+        if (hashedKey > values.lastIndex) {
+            return Null
+        }
+        return values[hashedKey] ?: Null
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MHashMap
+
+        return values.contentEquals(other.values)
+    }
+
+    override fun hashCode(): Int = values.contentHashCode()
+
+    companion object {
+        @JvmStatic
+        fun from(values: Map<MObject, MObject>): MHashMap {
+            val map = MHashMap()
+            values.forEach { map.put(it.key, it.value) }
+            return map
+        }
+    }
+}

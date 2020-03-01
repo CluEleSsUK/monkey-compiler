@@ -42,6 +42,7 @@ data class VirtualMachine(
                 OpCode.SET_GLOBAL -> runSetGlobal()
                 OpCode.GET_GLOBAL -> runGetGlobal()
                 OpCode.ARRAY -> buildAndPushArray()
+                OpCode.HASH_MAP -> buildAndPushHashmap()
             }
             instructionPointer++
         }
@@ -153,14 +154,14 @@ data class VirtualMachine(
 
     private fun runGetGlobal() {
         val globalIndex = memoryAddressOperandOf(instructionPointerOnwards())
-        instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
+        instructionPointer += operandsWidth(OpCode.GET_GLOBAL)
 
         stack.push(globalScope[globalIndex])
     }
 
     private fun buildAndPushArray() {
         val arrayLength = intOperandOf(instructionPointerOnwards()).toInt()
-        instructionPointer += operandsWidth(OpCode.SET_GLOBAL)
+        instructionPointer += operandsWidth(OpCode.ARRAY)
 
         val array = Array<MObject>(arrayLength) { Null }
         val lastIndex = arrayLength - 1
@@ -169,6 +170,26 @@ data class VirtualMachine(
         }
 
         stack.push(MArray(array))
+    }
+
+    private fun buildAndPushHashmap() {
+        val mapLength = intOperandOf(instructionPointerOnwards()).toInt()
+        instructionPointer += operandsWidth(OpCode.HASH_MAP)
+
+        val map = MHashMap()
+        for (i in 0 until (mapLength / 2)) {
+            // note that values appear higher on the stack than keys, so this ordering is important
+            val value = stack.pop()
+            val key = stack.pop()
+
+            when {
+                key == Null -> throw RuntimeException("Null is not a valid map key")
+                key == null || value == null -> throw RuntimeException("Expected ${mapLength / 2} entries on the stack, but there were only ${i - 1}")
+                else -> map.put(key, value)
+            }
+        }
+
+        stack.push(map)
     }
 }
 
