@@ -260,7 +260,7 @@ class Parser(var lexer: Lexer) {
         return IndexExpression(infixToken, left, indexExpression)
     }
 
-    private fun parseMapExpression(): MapLiteral? {
+    private fun parseMapExpression(): Expression? {
         val startToken = lexer.token ?: return null
         var values = mapOf<Expression, Expression>()
 
@@ -279,8 +279,14 @@ class Parser(var lexer: Lexer) {
 
             values = values.plus(key to value)
         }
+        consumeTokenAndAssertType(Tokens.RBRACE)
+        val mapExpression = MapLiteral(startToken, values)
 
-        return MapLiteral(startToken, values)
+        if (peekToken()?.type === Tokens.LBRACKET) {
+            return parseIndexExpression(mapExpression)
+        }
+
+        return mapExpression
     }
 
     private fun peekToken(): Token? {

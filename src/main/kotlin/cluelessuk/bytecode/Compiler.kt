@@ -6,6 +6,7 @@ import cluelessuk.language.BooleanLiteral
 import cluelessuk.language.ExpressionStatement
 import cluelessuk.language.Identifier
 import cluelessuk.language.IfExpression
+import cluelessuk.language.IndexExpression
 import cluelessuk.language.InfixExpression
 import cluelessuk.language.IntegerLiteral
 import cluelessuk.language.LetStatement
@@ -42,6 +43,7 @@ class Compiler {
             is MapLiteral -> compileMapLiteral(node)
             is LetStatement -> compileLetStatement(node)
             is Identifier -> compileIdentifier(node)
+            is IndexExpression -> compileIndexExpression(node)
             else -> Failure(listOf("Node not supported ${node.tokenLiteral()}"))
         }
     }
@@ -178,6 +180,13 @@ class Compiler {
                 .flatMap { compile(nextEntry.value) }
         }
             .then { emit(OpCode.HASH_MAP, (node.elements.size * 2).toUInt16()) }
+    }
+
+    private fun compileIndexExpression(node: IndexExpression): CompilationResult<Bytecode> {
+        return compile(node.left)
+            .then(::removeLastIfPop)
+            .flatMap { compile(node.index) }
+            .then { emit(OpCode.INDEX) }
     }
 
     private fun emitForAddress(opcode: OpCode, vararg operands: MemoryAddress): CompilationResult<MemoryAddress> {

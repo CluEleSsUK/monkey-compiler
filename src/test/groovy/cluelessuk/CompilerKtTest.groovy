@@ -193,5 +193,21 @@ class CompilerKtTest extends Specification {
         "{1 + 2: 3 * 4, 5: 6}" | [MInteger.from(1), MInteger.from(2), MInteger.from(3), MInteger.from(4), MInteger.from(5), MInteger.from(6)] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ADD), bytecodeConstant(2), bytecodeConstant(3), make(OpCode.MULTIPLY), bytecodeConstant(4), bytecodeConstant(5), make(OpCode.HASH_MAP, 4), make(OpCode.POP)]
     }
 
+    def "Compiler supports array and map for index expression"(String input, List<MObject> constants, List<byte[]> expected) {
+        given:
+        def program = new Parser(new Lexer(input)).parseProgram()
+        def result = compiler.compile(program)
+
+        expect:
+        ByteUtils.assertExpectedConstants(constants, result)
+        ByteUtils.assertExpected(expected, result)
+
+        where:
+        input              | constants                                                 | expected
+        "[1, 2][1]"        | [MInteger.from(1), MInteger.from(2), MInteger.from(1)]    | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.ARRAY, 2), bytecodeConstant(2), make(OpCode.INDEX), make(OpCode.POP)]
+        "[1][1 + 1]"       | [MInteger.from(1), MInteger.from(1), MInteger.from(1)]    | [bytecodeConstant(0), make(OpCode.ARRAY, 1), bytecodeConstant(1), bytecodeConstant(2), make(OpCode.ADD), make(OpCode.INDEX), make(OpCode.POP)]
+        '{ 1: "blah" }[1]' | [MInteger.from(1), new MString("blah"), MInteger.from(1)] | [bytecodeConstant(0), bytecodeConstant(1), make(OpCode.HASH_MAP, 2), bytecodeConstant(2), make(OpCode.INDEX), make(OpCode.POP)]
+    }
+
 }
 

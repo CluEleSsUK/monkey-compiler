@@ -20,7 +20,8 @@ enum class OpCode {
     SET_GLOBAL,
     GET_GLOBAL,
     ARRAY,
-    HASH_MAP;
+    HASH_MAP,
+    INDEX;
 
     fun byte(): Byte = this.ordinal.toByte()
 
@@ -60,7 +61,8 @@ val opcodeDefinitions = mapOf(
     OpCode.SET_GLOBAL to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize)),
     OpCode.GET_GLOBAL to OpCodeDefinition("OpJumpIfNotTrue", listOf(pointerSize)),
     OpCode.ARRAY to OpCodeDefinition("OpArray", listOf(maxArrayLength)),
-    OpCode.HASH_MAP to OpCodeDefinition("OpHashMap", listOf(maxArrayLength))
+    OpCode.HASH_MAP to OpCodeDefinition("OpHashMap", listOf(maxArrayLength)),
+    OpCode.INDEX to OpCodeDefinition("OpIndex")
 )
 
 // this will happily blow up if you pass in an empty array
