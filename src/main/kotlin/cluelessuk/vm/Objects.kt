@@ -1,6 +1,7 @@
 package cluelessuk.vm
 
 import cluelessuk.bytecode.from
+import kotlin.math.absoluteValue
 
 sealed class MObject(val type: String) {
     fun hashKey(): MInteger {
@@ -63,6 +64,21 @@ data class MString(val value: String) : MObject("STRING") {
 }
 
 data class MArray(val values: Array<MObject>) : MObject("ARRAY") {
+
+    operator fun get(mIndex: MInteger): MObject {
+        val index = mIndex.value
+
+        if (index < 0) {
+            return Null
+        }
+
+        if (values.lastIndex < index) {
+            return Null
+        }
+
+        return values[index]
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -85,24 +101,46 @@ data class MArray(val values: Array<MObject>) : MObject("ARRAY") {
 // currently does not account for collisions
 class MHashMap : MObject("HASHMAP") {
 
-    private var values = Array<MObject?>(1024) { null }
+    private val maxHashmapSize = 1024 * 1024
+    private var store = Array<MObject?>(1024) { null }
 
-    fun put(key: MObject, value: MObject?): MHashMap {
-        val hashedKey = key.hashKey().value
-        if (hashedKey > values.lastIndex) {
-            values = values.copyOf(hashedKey * 2)
-        }
+    operator fun set(key: MObject, value: MObject?): MHashMap {
+        increaseStoreSizeIfNecessary(key)
+        store[storeIndexFor(key)] = value
 
-        values[hashedKey] = value
         return this
     }
 
-    fun get(key: MObject): MObject {
-        val hashedKey = key.hashKey().value
-        if (hashedKey > values.lastIndex) {
+    operator fun get(key: MObject): MObject {
+        val hashedKey = storeIndexFor(key)
+
+        if (hashedKey > store.lastIndex) {
             return Null
         }
-        return values[hashedKey] ?: Null
+
+        return store[hashedKey] ?: Null
+    }
+
+    private fun increaseStoreSizeIfNecessary(key: MObject) {
+        val positiveHashKey = hashKeyOf(key).absoluteValue
+
+        if (store.lastIndex < positiveHashKey) {
+            store = store.copyOf(positiveHashKey * 2)
+        }
+    }
+
+    private fun hashKeyOf(key: MObject): Int {
+        return key.hashKey().value % maxHashmapSize
+    }
+
+    private fun storeIndexFor(key: MObject): Int {
+        val hash = hashKeyOf(key)
+
+        if (hash < 0) {
+            return store.lastIndex + hash
+        }
+
+        return hash
     }
 
     override fun equals(other: Any?): Boolean {
@@ -111,16 +149,18 @@ class MHashMap : MObject("HASHMAP") {
 
         other as MHashMap
 
-        return values.contentEquals(other.values)
+        return store.contentEquals(other.store)
     }
 
-    override fun hashCode(): Int = values.contentHashCode()
+    override fun hashCode(): Int = store.contentHashCode()
 
     companion object {
         @JvmStatic
         fun from(values: Map<MObject, MObject>): MHashMap {
             val map = MHashMap()
-            values.forEach { map.put(it.key, it.value) }
+            values.forEach {
+                map[it.key] = it.value
+            }
             return map
         }
     }

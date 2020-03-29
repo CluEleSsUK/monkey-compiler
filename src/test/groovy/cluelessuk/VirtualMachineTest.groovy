@@ -149,6 +149,28 @@ class VirtualMachineTest extends Specification {
         '{ 1 + 1: 2 + 2, 2 + 2: 3 + 3 }' | MHashMap.from([(MInteger.from(2)): MInteger.from(4), (MInteger.from(4)): MInteger.from(6)])
     }
 
+    def "Index expressions return the correct result"(String input, MObject expected) {
+        given:
+        def bytecode = successfullyCompiled(input)
+        def output = new VirtualMachine(bytecode).run()
+
+        expect:
+        output.result() == expected
+
+        where:
+        input                                                       | expected
+        "[][0]"                                                     | Null
+        "{}[0]"                                                     | Null
+        "[1, 2, 3][0]"                                              | MInteger.from(1)
+        "[1, 2, 3][1]"                                              | MInteger.from(2)
+        "[1, 2, 3][4]"                                              | Null
+        "[1, 2, 3][-1]"                                             | Null
+        '{ 1: "blah" }[1]'                                          | new MString("blah")
+        '{ "blah": 1 }["blah"]'                                     | MInteger.from(1)
+        '{ 1: "blah" }[-1]'                                         | Null
+        '{ 1: "blah", "thing": "wow", "another": true }["another"]' | new MBoolean(true)
+    }
+
     private Bytecode successfullyCompiled(String input) {
         def program = new Parser(new Lexer(input)).parseProgram()
         def compiled = compiler.compile(program)

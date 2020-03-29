@@ -43,6 +43,7 @@ data class VirtualMachine(
                 OpCode.GET_GLOBAL -> runGetGlobal()
                 OpCode.ARRAY -> buildAndPushArray()
                 OpCode.HASH_MAP -> buildAndPushHashmap()
+                OpCode.INDEX -> runIndexOperation()
             }
             instructionPointer++
         }
@@ -177,6 +178,7 @@ data class VirtualMachine(
         instructionPointer += operandsWidth(OpCode.HASH_MAP)
 
         val map = MHashMap()
+
         for (i in 0 until (mapLength / 2)) {
             // note that values appear higher on the stack than keys, so this ordering is important
             val value = stack.pop()
@@ -185,11 +187,26 @@ data class VirtualMachine(
             when {
                 key == Null -> throw RuntimeException("Null is not a valid map key")
                 key == null || value == null -> throw RuntimeException("Expected ${mapLength / 2} entries on the stack, but there were only ${i - 1}")
-                else -> map.put(key, value)
+                else -> map[key] = value
             }
         }
 
         stack.push(map)
+    }
+
+    private fun runIndexOperation() {
+        val key = stack.pop() ?: Null
+
+        val result = when (val collection = stack.pop()) {
+            is MHashMap -> collection[key]
+            is MArray -> when (key) {
+                is MInteger -> collection[key]
+                else -> throw RuntimeException("Array index key must be an Integer, but was ${key.type}")
+            }
+            else -> throw RuntimeException("Index operator not supported for ${collection?.type}")
+        }
+
+        stack.push(result)
     }
 }
 
